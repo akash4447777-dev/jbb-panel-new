@@ -91,8 +91,8 @@ function seedData() {
     t: [],
     s: [],
     cos: [
-      { m: "JBB Constructions", x: false },
-      { m: "JBB Infra", x: false }
+      { m: "JBB CONSTRUCTIONS", n: "JBB Constructions", x: 0 },
+      { m: "JBB INFRA", n: "JBB Infra", x: 0 }
     ],
     bud: {
       cat: { Material: 200000, Transport: 50000, Salary: 150000 },
@@ -133,12 +133,39 @@ const PG_TABLE = process.env.PG_TABLE || "jbb_store";
 let pool = null;
 let pgReady = false;
 
+/* Roles written by the previous server were Title-Case ("Admin"/"Manager").
+   The panel keys everything off lower-case super/admin/manager, so old stores
+   would leave the owner without super powers. Map in place, never drop a user. */
+const ROLE_MAP = { admin: "super", super: "super", manager: "admin", user: "manager", staff: "manager" };
+const STATUS_MAP = { disabled: "blocked", blocked: "blocked", pending: "pending", active: "active" };
+
+function migrateUsers(users) {
+  for (const key of Object.keys(users)) {
+    const u = users[key];
+    if (!u || typeof u !== "object") { delete users[key]; continue; }
+    const rawRole = String(u.role || "").trim();
+    const role = ROLE_MAP[rawRole.toLowerCase()] || (rawRole === "Admin" ? "super" : "manager");
+    u.role = role;
+    u.status = STATUS_MAP[String(u.status || "active").toLowerCase()] || "active";
+    if (!u.ver) u.ver = 1;
+    if (!u.id) u.id = key;
+  }
+  /* guarantee exactly one super admin exists so the panel is never locked out */
+  const all = Object.keys(users).map(k => users[k]);
+  if (all.length && !all.some(u => u.role === "super")) {
+    const oldest = all.slice().sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")))[0];
+    oldest.role = "super";
+    oldest.status = "active";
+  }
+  return users;
+}
+
 function normalise(parsed) {
   const data = parsed.data && typeof parsed.data === "object" ? parsed.data : seedData();
   return {
     ver: Number(parsed.ver) || 0,
     data,
-    users: parsed.users && typeof parsed.users === "object" ? parsed.users : {},
+    users: migrateUsers(parsed.users && typeof parsed.users === "object" ? parsed.users : {}),
     createdAt: parsed.createdAt || nowIso(),
     updatedAt: parsed.updatedAt || nowIso()
   };
@@ -325,7 +352,7 @@ function persist() {
  * tokens  (stateless, HMAC signed)
  * ------------------------------------------------------------------ */
 function issueToken(user) {
-  const payload = { sub: user.id, role: user.role, exp: Date.now() + TOKEN_TTL_MS };
+  const payload = { sub: user.id, role: user.role, ver: user.ver || 1, exp: Date.now() + TOKEN_TTL_MS };
   const body = b64(payload);
   return body + "." + hmac(SECRET, body);
 }
@@ -347,7 +374,12 @@ function readToken(tok) {
     return null;
   }
   if (!payload || !payload.exp || payload.exp < Date.now()) return null;
-  return store.users[payload.sub] || null;
+  const user = store.users[payload.sub];
+  if (!user) return null;
+  /* a stale ver means the account was blocked, removed or re-passworded since this
+     token was issued — that token must stop working immediately */
+  if ((payload.ver || 1) !== (user.ver || 1)) return null;
+  return user;
 }
 
 /* ------------------------------------------------------------------ *
@@ -465,22 +497,30 @@ async function handleLogin(req, res) {
 
   let user = store.users[id];
   if (!user) {
-    // First sign-in provisions the account (panel allows any Gmail / mobile number).
+    // First sign-in provisions the Super Admin; everyone after must be approved.
     const firstUser = Object.keys(store.users).length === 0;
     user = {
       id,
       name: id.includes("@") ? id.split("@")[0] : id,
-      role: firstUser ? "Admin" : "Manager",
-      status: "active",
+      role: firstUser ? "super" : "manager",
+      status: firstUser ? "active" : "pending",
+      ver: 1,
       createdAt: nowIso(),
       lastLoginAt: null
     };
     setPassword(user, password);
     store.users[id] = user;
-  } else if (!checkPassword(user, password)) {
-    return send(res, 401, { error: "Password galat hai" });
+    persist();
+    if (!firstUser) {
+      return send(res, 403, { error: "Aapki request Super Admin ke paas hai. Approve hone par login chalega." });
+    }
+  } else {
+    if (!checkPassword(user, password)) return send(res, 401, { error: "Gmail/number ya password galat hai" });
+    if (user.status === "pending") {
+      return send(res, 403, { error: "Aapki request Super Admin ke paas hai. Approve hone par login chalega." });
+    }
+    if (user.status !== "active") return send(res, 403, { error: "Ye account band hai. Super Admin se baat karein." });
   }
-  if (user.status === "disabled") return send(res, 403, { error: "Account band hai — admin se baat karein" });
 
   user.lastLoginAt = nowIso();
   persist();
@@ -488,7 +528,7 @@ async function handleLogin(req, res) {
   return send(res, 200, {
     token: issueToken(user),
     status: user.status || "active",
-    user: { id: user.id, name: user.name, role: user.role }
+    user: publicUser(user)
   });
 }
 
@@ -501,11 +541,80 @@ function requireUser(req, res) {
     send(res, 401, { error: "Login required" });
     return null;
   }
-  if (user.status === "disabled") {
+  if (user.status && user.status !== "active") {
     send(res, 403, { error: "Account band hai" });
     return null;
   }
   return user;
+}
+
+function publicUser(u) {
+  return { id: u.id, name: u.name, role: u.role, status: u.status };
+}
+
+/* ------------------------------------------------------------------ *
+ * user admin (Super Admin only) — panel calls GET /users, POST /users/act
+ * ------------------------------------------------------------------ */
+function requireSuper(req, res) {
+  const user = requireUser(req, res);
+  if (!user) return null;
+  if (user.role !== "super") {
+    send(res, 403, { error: "Sirf Super Admin user manage kar sakta hai" });
+    return null;
+  }
+  return user;
+}
+
+function handleGetUsers(req, res) {
+  const me = requireSuper(req, res);
+  if (!me) return;
+  const users = Object.keys(store.users)
+    .map(k => store.users[k])
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)))
+    .map(u => Object.assign(publicUser(u), { createdAt: u.createdAt || null, lastLoginAt: u.lastLoginAt || null }));
+  return send(res, 200, { users, me: publicUser(me) });
+}
+
+async function handleUserAct(req, res) {
+  const me = requireSuper(req, res);
+  if (!me) return;
+  const body = await readBody(req);
+  const uid = normId(body.uid || body.id);
+  const act = String(body.act || "");
+  const target = store.users[uid];
+  if (!target) return send(res, 404, { error: "User nahi mila" });
+  if (uid === me.id && (act === "block" || act === "remove")) {
+    return send(res, 400, { error: "Apne aap ko block ya remove nahi kar sakte" });
+  }
+  if (act === "approve") { target.status = "active"; if (!target.role || target.role === "manager") target.role = "admin"; }
+  else if (act === "block") target.status = "blocked";
+  else if (act === "unblock") target.status = "active";
+  else if (act === "remove") delete store.users[uid];
+  else if (act === "role") {
+    const role = String(body.role || "");
+    if (!["super", "admin", "manager"].includes(role)) return send(res, 400, { error: "Role galat hai" });
+    if (uid === me.id && role !== "super") return send(res, 400, { error: "Apna Super Admin role nahi hata sakte" });
+    target.role = role;
+  } else return send(res, 400, { error: "Act samajh nahi aaya" });
+
+  /* bumping ver invalidates tokens issued before a block/removal */
+  if (act === "block" || act === "remove") target.ver = (target.ver || 1) + 1;
+  persist();
+  return send(res, 200, { ok: true, user: store.users[uid] ? publicUser(store.users[uid]) : null });
+}
+
+async function handlePassword(req, res) {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const body = await readBody(req);
+  const oldPw = String(body.old == null ? "" : body.old);
+  const next = String(body.next == null ? body.password : body.next);
+  if (!checkPassword(user, oldPw)) return send(res, 400, { error: "Current password galat hai" });
+  if (next.length < 6) return send(res, 400, { error: "Naya password kam se kam 6 characters ka ho" });
+  setPassword(user, next);
+  user.ver = (user.ver || 1) + 1;
+  persist();
+  return send(res, 200, { ok: true, token: issueToken(user) });
 }
 
 function handleGetData(req, res) {
@@ -588,8 +697,13 @@ async function router(req, res) {
   }
   if (p === "/data" && m === "GET") return handleGetData(req, res);
   if (p === "/data" && m === "PUT") return handlePutData(req, res);
+  if (p === "/users" && m === "GET") return handleGetUsers(req, res);
+  if (p === "/users/act" && m === "POST") return handleUserAct(req, res);
+  if (p === "/auth/password" && m === "POST") return handlePassword(req, res);
 
-  if (p.startsWith("/auth/") || p === "/data") return send(res, 405, { error: "Method not allowed" });
+  if (p.startsWith("/auth/") || p.startsWith("/users") || p === "/data") {
+    return send(res, 405, { error: "Method not allowed" });
+  }
 
   if (m === "GET" || m === "HEAD") return serveStatic(req, res, p);
   return send(res, 404, { error: "Not found" });

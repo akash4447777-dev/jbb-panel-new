@@ -2,71 +2,152 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>JBB PANEL — New UI</title>
+<title>JBB PANEL</title>
 <style>
-:root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--card:#fff;--bg:#f2f4f7;--ac:#16a34a;--red:#dc2626;--warn:#d97706;--bd:#cbd5e1}
+:root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--card:#fff;--bg:#f2f4f7;--ac:#16a34a;--acD:#15803d;--acDD:#14532d;--red:#dc2626;--warn:#d97706;--blue:#2563eb;--bd:#cbd5e1;--ok:#15803d}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%}
 a{color:inherit;text-decoration:none}
 small,.mu{font-size:12px;color:var(--muted)}
-h1{margin:0 0 14px;font-size:22px;font-weight:800;color:#0f172a}
-h2{margin:0 0 10px;font-size:15px;font-weight:800;color:#0f172a}
+h1{margin:0 0 14px;font-size:22px;font-weight:800}
+h2{margin:0 0 10px;font-size:15px;font-weight:800}
+h3.hd{margin:16px 0 8px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 section{margin-bottom:16px}
 .mt{margin-top:12px}
-.topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:12px;justify-content:space-between;padding:11px 18px;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;box-shadow:0 2px 12px rgba(15,23,42,.12)}
-.brand{font-size:19px;font-weight:800;letter-spacing:.01em;white-space:nowrap}
-.user{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;white-space:nowrap}
-.user b{font-weight:700}
-#logout{border:1px solid rgba(255,255,255,.45);background:#fff;color:#14532d;border-radius:8px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:12.5px}
-.nav{display:flex;gap:3px;overflow-x:auto;padding:6px 10px;position:sticky;top:52px;z-index:11;background:#fff;border-bottom:1px solid var(--line)}
-.nav button{border:0;background:none;padding:8px 14px;border-radius:9px;color:var(--muted);font:inherit;font-weight:650;cursor:pointer;white-space:nowrap}
-.nav button.on{background:#14532d;color:#fff;box-shadow:0 2px 8px rgba(21,128,61,.3)}
-.nav button:hover{color:#14532d;background:#e8f7ed}
-.screen{padding:14px 12px 70px;max-width:1200px;margin:0 auto;width:100%}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
-.stat .v{font-size:20px;font-weight:800;line-height:1.15;word-break:break-all}
-.stat .l{margin-top:2px;font-size:12px;font-weight:600;color:var(--muted)}
-table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto;font-variant-numeric:tabular-nums}
-th{text-align:right;padding:9px 10px;font-size:12px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);background:#fbfdfe}
+
+/* ---------- header ---------- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 16px;background:linear-gradient(135deg,var(--acDD),var(--ac));color:#fff;box-shadow:0 2px 12px rgba(15,23,42,.12)}
+.brand{font-size:18px;font-weight:800;letter-spacing:.01em;white-space:nowrap}
+.user{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;white-space:nowrap;flex-wrap:wrap;justify-content:flex-end}
+.hbtn{border:1px solid rgba(255,255,255,.45);background:#fff;color:var(--acDD);border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap}
+.hbtn:active{transform:scale(.97)}
+
+/* ---------- nav ---------- */
+.nav{display:flex;gap:3px;overflow-x:auto;padding:6px 10px;position:sticky;top:47px;z-index:19;background:#fff;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.nav button{border:0;background:none;padding:8px 13px;border-radius:9px;color:var(--muted);font:inherit;font-weight:650;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.nav button i{font-style:normal;font-size:14px;opacity:.9}
+.nav button.on{background:var(--acDD);color:#fff;box-shadow:0 2px 8px rgba(21,128,61,.3)}
+.nav button:hover:not(.on){color:var(--acDD);background:#e8f7ed}
+
+/* ---------- layout ---------- */
+.screen{padding:14px 12px 80px;max-width:1200px;margin:0 auto;width:100%}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filters select,.filters input{border:1px solid var(--bd);border-radius:8px;padding:7px 9px;font:inherit;font-size:12.5px;background:#fff;color:var(--ink);max-width:170px}
+.filters select:focus,.filters input:focus{outline:2px solid #bbf7d0;border-color:var(--ac)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.bar input{flex:1;min-width:150px;border:1px solid var(--bd);border-radius:8px;padding:8px 11px;font:inherit;background:#fff}
+.bar input:focus{outline:2px solid #bbf7d0;border-color:var(--ac)}
+
+/* ---------- cards / stats ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:9px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;min-width:0}
+.stat b{display:block;font-size:19px;font-weight:800;line-height:1.15;word-break:break-word}
+.stat span{display:block;margin-top:2px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px}
+
+/* ---------- rows ---------- */
+.row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:10px 13px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;cursor:pointer}
+.row:hover{background:#f9fbfb;border-color:#b7e4c7}
+.row>div{min-width:0}
+.row small{display:block;line-height:1.35}
+.row .r{text-align:right;white-space:nowrap;font-weight:700}
+.row b{font-weight:800}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums;font-size:13px}
+th{text-align:right;padding:8px 9px;font-size:11.5px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);background:#fbfdfe;white-space:nowrap}
 th:first-child{text-align:left}
-td{padding:9px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px}
+td{padding:8px 9px;border-bottom:1px solid #f1f5f9;text-align:right;white-space:nowrap}
+td:first-child{text-align:left}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#f9fbfb}
-td.num,th.num{text-align:right}
-.pos{color:#15803d}.neg{color:#dc2626}
-.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#f1f5f9;color:#475569}
-.badge.VERIFIED{background:#e7f5e8;color:#15803d}.badge.REVERSED{background:#f1f5f9;color:#64748b}.badge.AMENDED{background:#fef3e2;color:#b45309}
-.badge.P{background:#e7f5e8;color:#15803d}.badge.H{background:#fffbeb;color:#a16207}.badge.A{background:#fee2e2;color:#b91c1c}
-.rowact{white-space:nowrap}.rowact .btn{margin:0 1.5px}
-.btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--ac);color:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(22,163,74,.18)}
-.btn:hover{background:#15803d}
-.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--bd)}.btn.ghost:hover{background:#f8fafc}
-.btn.red{background:var(--red)}.btn.red:hover{background:#b91c1c}
-.btn.sm{padding:6px 10px;font-size:12.5px}
+tfoot th{background:#f8fafc;border-top:2px solid var(--line)}
+.tw{overflow-x:auto;padding:0;border:0;background:none}
+
+/* ---------- attendance grid ---------- */
+.gw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:#fff}
+.gw table{border:0;border-radius:0;font-size:12px;width:auto;min-width:100%}
+.gw th,.gw td{padding:4px 5px;text-align:center}
+.gw th.dc,.gw td.dc{text-align:left;position:sticky;left:0;background:#fff;z-index:2;box-shadow:1px 0 0 var(--line);min-width:130px;max-width:170px;white-space:normal}
+.gw thead th.dc{background:#fbfdfe;z-index:3}
+.gw td.P{background:#dcfce7;color:#15803d;font-weight:700}
+.gw td.H{background:#fef3c7;color:#b45309;font-weight:700}
+.gw td.A{background:#fee2e2;color:#b91c1c;font-weight:700}
+.gw th.sn{background:#f1f5f9}
+.gw th.tn{background:#dbeafe;color:#1d4ed8}
+.gw td{cursor:pointer}
+.gw tbody tr:hover td:not(.dc){background:#f8fafc}
+
+/* ---------- controls ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:var(--ac);color:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(22,163,74,.18)}
+.btn:hover{background:var(--acD)}
+.btn:active{transform:scale(.98)}
+.btn.g{background:#fff;color:var(--ink);border:1px solid var(--bd);box-shadow:none}
+.btn.g:hover{background:#f8fafc}
+.btn.red{background:var(--red)}
+.btn.red:hover{background:#b91c1c}
+.btn.sm{padding:5px 9px;font-size:12px}
 .btn.big{width:100%;padding:11px 14px;font-size:15px}
-.input{width:100%;border:1px solid var(--bd);border-radius:8px;padding:9px 10px;font:inherit;background:#fff;color:var(--ink)}
-.input:focus{outline:2px solid #bfdbfe;outline-offset:1px}
-label{display:block;margin:9px 0 4px;font-size:12.5px;font-weight:700;color:var(--muted)}
-.acts{display:flex;gap:8px;margin-top:16px}
-.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.toolbar input{flex:1;min-width:170px;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font:inherit;background:#fff}
-.toolbar input:focus{outline:2px solid #bfdbfe;outline-offset:1px}
-.login-card{max-width:440px;margin:0 auto;padding:40px 20px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 24px rgba(15,23,42,.07)}
-.login-card h1{text-align:center;margin:0 0 6px}
-.login-card .sub{text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:22px}
-.login-card label{text-align:left}
-.login-err{background:#fee2e2;color:var(--red);border-radius:9px;padding:8px 10px;margin-bottom:10px;font-weight:600;display:none}
-.login-err.on{display:block}
-dialog{border:0;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 22px 50px rgba(15,23,42,.18),0 0 0 1px var(--line);width:min(560px,95vw);max-height:90vh;overflow:auto}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.seg{display:flex;gap:3px}
+.seg button{width:32px;height:30px;border:1px solid var(--bd);background:#fff;color:var(--muted);border-radius:7px;font:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.seg .on{color:#fff;border-color:transparent}
+.seg .P{background:var(--ok)}.seg .H{background:var(--warn)}.seg .A{background:var(--red)}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#f1f5f9;color:#475569;margin:1px 2px 0 0;white-space:nowrap}
+.pill.ok{background:#e7f5e8;color:#15803d}
+.pill.bad{background:#fee2e2;color:#b91c1c}
+.pill.wn{background:#fef3e2;color:#b45309}
+.pill.info{background:#dbeafe;color:#1d4ed8}
+.bar2{height:7px;background:#eef2f6;border-radius:99px;overflow:hidden;margin:6px 0}
+.bar2 i{display:block;height:100%;background:var(--ac);border-radius:99px}
+
+/* ---------- forms ---------- */
+label{display:block;margin:10px 0 4px;font-size:12px;font-weight:700;color:var(--muted)}
+.input,input[type=text],input[type=password],input[type=number],input[type=date],input[type=month],input[type=time],select,textarea{width:100%;border:1px solid var(--bd);border-radius:8px;padding:9px 10px;font:inherit;background:#fff;color:var(--ink)}
+.input:focus,select:focus,textarea:focus{outline:2px solid #bbf7d0;border-color:var(--ac)}
+textarea{resize:vertical;line-height:1.45}
+.acts{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.neg{color:var(--red)}.pos{color:var(--ok)}
+.err{background:#fee2e2;color:var(--red);border-radius:8px;padding:7px 9px;margin-top:8px;font-weight:600;font-size:12.5px;display:none}
+.err.on{display:block}
+.empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13px}
+
+/* ---------- dialogs ---------- */
+dialog{border:0;background:var(--card);border-radius:16px;padding:18px;box-shadow:0 22px 50px rgba(15,23,42,.18),0 0 0 1px var(--line);width:min(520px,95vw);max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(15,23,42,.42)}
+dialog b.t{display:block;font-size:16px;margin-bottom:4px}
 dialog h2{margin-top:0}
-#toast{display:none;position:fixed;right:18px;bottom:18px;background:#0f172a;color:#fff;padding:11px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:30;max-width:320px}
+
+/* ---------- login ---------- */
+.login-wrap{display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;background:linear-gradient(160deg,#14532d,#16a34a 60%,#22c55e)}
+.login-card{width:min(400px,100%);background:#fff;border-radius:18px;padding:26px 22px;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.login-card h1{text-align:center;margin:0 0 4px;font-size:24px}
+.login-card .sub{text-align:center;color:var(--muted);font-size:12.5px;margin:0 0 16px}
+.login-card .badge-mode{display:block;text-align:center;font-size:11px;color:var(--muted);margin-bottom:14px}
+
+/* ---------- toast ---------- */
+#toast{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#0f172a;color:#fff;padding:11px 17px;border-radius:11px;box-shadow:0 10px 30px rgba(0,0,0,.28);z-index:60;max-width:88vw;font-size:13px;font-weight:600;text-align:center}
 #toast.on{display:block}
-#toast.ok{background:#16a34a}
-@media(max-width:640px){.topbar{padding:9px 12px}.nav{top:49px}}
-@media(max-width:760px){.screen table{display:block;overflow-x:auto;white-space:nowrap}}
+#toast.ok{background:var(--acD)}
+
+/* ---------- responsive ---------- */
+@media(max-width:760px){
+  .screen table:not(.gw table){display:block;overflow-x:auto;white-space:nowrap}
+  .filters select,.filters input{max-width:none;flex:1 1 42%}
+  .stat b{font-size:17px}
+  .row{flex-wrap:wrap}
+}
+@media(min-width:900px){
+  .screen{padding:18px 20px 80px}
+}
+@media print{
+  .topbar,.nav,.bar,.filters,.acts,#toast{display:none!important}
+  .screen{padding:0;max-width:none}
+  body{background:#fff}
+  table{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -74,510 +155,14 @@ dialog h2{margin-top:0}
 <div id="nav" class="nav"></div>
 <main><div id="screen" class="screen"></div></main>
 <dialog id="dlg"></dialog>
+<dialog id="dlg2"></dialog>
 <div id="toast"></div>
-<script>
-"use strict";
 
-/* ================= state ================= */
-let D={w:[],adv:[],ex:[],inc:[],mp:[],fa:[],cos:[],sh:[],nl:[],a:{},t:{},s:[],nx:0,ni:0,n:0,bud:{cat:{},mgr:[]}};
-let VER=0,ME=null,tab="dash",q="";
-const TY={g:"Advance given",r:"Returned",n:"Jama"};
-const ST={P:"Present",H:"Half day",A:"Absent"};
-
-/* ================= utils ================= */
-const $=(s)=>document.querySelector(s);
-const esc=(v)=>{const s=String(v==null?"":v);return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))};
-/* quote a value for use inside an HTML on*="" attribute */
-const jsq=(v)=>esc("'"+String(v==null?"":v).replace(/\\/g,"\\\\").replace(/'/g,"\\'")+"'");
-function num(v){const n=Math.round((+v||0)*100)/100;return "₹"+n.toLocaleString("en-IN",{minimumFractionDigits:n%1?2:0});}
-function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
-function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("ok");e.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove("on"),2600)}
-function say(m){toast(m)}
-function cn(c){const i=+String(c==null?"":c).trim();const e=D.cos[i-1];return e?e.m:""}
-function nextId(arr){let m=0;for(const x of arr||[])m=Math.max(m,+x.id||0);return m+1}
-function nextSeq(arr){let m=0;for(const x of arr||[])m=Math.max(m,+x.no||0);return m+1}
-function who(id){return (D.w||[]).find(x=>String(x.id)==String(id))||(D.s||[]).find(x=>String(x.id)==String(id))||{}}
-function fixD(){for(const k of ["w","adv","ex","inc","mp","fa","sh","nl","a","t","s","cos"])if(!D[k]||typeof D[k]!=="object")D[k]=[];if(!D.bud)D.bud={};if(!D.bud.cat)D.bud.cat={};if(!Array.isArray(D.bud.mgr))D.bud.mgr=[];}
-function setTk(t){t?localStorage.setItem("bm_tok",t):localStorage.removeItem("bm_tok")}
-function setTab(k){tab=k;q="";render();}
-
-/* ================= offline-first local backend =================
-   GitHub Pages / file:// pe koi server nahi hota, isliye data browser ke
-   localStorage me rakha jata hai. Cloud mode bhi available hai (settings).
-   NOTE: offline mode me password sirf screen-lock hai — data device pe hi
-   plain text me hai. */
-const LKEY="jbb_local_db",PKEY="jbb_prefs";
-function prefsRaw(){try{return JSON.parse(localStorage.getItem(PKEY)||"{}")}catch(e){return {}}}
-function prefsSet(o){try{localStorage.setItem(PKEY,JSON.stringify(Object.assign(prefsRaw(),o)))}catch(e){}}
-/* Mode resolution order:
-   1. ?api=https://… on the URL   -> cloud, that server (shareable one-liner)
-   2. saved preference in Settings
-   3. hostname heuristic (static hosts -> offline, otherwise cloud) */
-let MODE="cloud";
-(function(){
-  const qs=new URLSearchParams(location.search||"");
-  const api=String(qs.get("api")||"").trim();
-  if(/^https?:\/\//.test(api)){
-    prefsSet({mode:"cloud",cloudBase:api.replace(/\/+$/,"")});
-    MODE="cloud";
-    return;
-  }
-  const p=prefsRaw();
-  if(p.mode==="local"||p.mode==="cloud"){MODE=p.mode;return}
-  const h=String(location.hostname||"");
-  MODE=(location.protocol==="file:"||/\.github\.io$/.test(h)||/\.pages\.dev$/.test(h))?"local":"cloud";
-})();
-function cloudBase(){return String(prefsRaw().cloudBase||"").replace(/\/+$/,"")}
-function localSeed(){
-  const D2=(n)=>{const d=new Date(Date.now()-n*86400000);return d.toISOString().slice(0,10)};
-  return {
-    w:[{id:1,n:"Ramesh Kumar",c:"1",wg:550,r:"Mason",ph:"9810012345",em:"ramesh@example.com"},
-       {id:2,n:"Suresh Yadav",c:"1",wg:500,r:"Helper",ph:"9810012346",em:""},
-       {id:3,n:"Mahesh Singh",c:"2",wg:600,r:"Carpenter",ph:"9810012347",em:""},
-       {id:4,n:"Anil Sharma",c:"2",wg:480,r:"Helper",ph:"9810012348",em:""},
-       {id:5,n:"Vijay Verma",c:"1",wg:0,r:"Painter",ph:"9810012349",em:""}],
-    adv:[{id:1,d:D2(9),w:1,t:"g",amt:5000,note:"Ghar ke liye"},
-         {id:2,d:D2(7),w:2,t:"g",amt:3000,note:"Medical"},
-         {id:3,d:D2(5),w:3,t:"g",amt:7500,note:"School fees"},
-         {id:4,d:D2(3),w:1,t:"r",amt:2000,note:"Wapas kiya"},
-         {id:5,d:D2(2),w:4,t:"g",amt:2500,note:"Travel"}],
-    ex:[{id:1,no:1,d:D2(10),v:"Sharma Cement Store",cat:"Material",c:"1",amt:48500,ds:"INV-2201"},
-        {id:2,no:2,d:D2(6),v:"Gupta Steel",cat:"Material",c:"1",amt:72500,ds:"INV-2233"},
-        {id:3,no:3,d:D2(4),v:"Truck Rentals",cat:"Transport",c:"2",amt:12500,ds:"TR-118"}],
-    inc:[{id:1,no:1,d:D2(8),v:"Mehra Builders",cat:"Contract",c:"1",amt:150000,ds:"RC-551"},
-         {id:2,no:2,d:D2(2),v:"Sunrise Infra",cat:"Contract",c:"2",amt:92000,ds:"RC-560"}],
-    mp:[],fa:[],sh:[],nl:{},a:{},t:[],s:[],
-    cos:[{m:"JBB Constructions",x:false},{m:"JBB Infra",x:false}],
-    bud:{cat:{Material:200000,Transport:50000,Salary:150000},mgr:[250000,150000]}
-  };
-}
-function locLoad(){
-  try{const o=JSON.parse(localStorage.getItem(LKEY)||"null");if(o&&o.data)return o}catch(e){}
-  return null;
-}
-function locInit(){
-  let db=locLoad();
-  if(!db){db={ver:0,data:localSeed(),users:{},createdAt:new Date().toISOString()};locSave(db)}
-  return db;
-}
-function locSave(db){
-  try{localStorage.setItem(LKEY,JSON.stringify(db));return true}
-  catch(e){say("Device storage full — export karke space banayein.");return false}
-}
-/* deterministic device-local hash: screen lock only, not cryptographic security */
-function pwHash(id,pw){
-  let h=5381;const s=id+"\u0001"+pw;
-  for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
-  return "h"+(h>>>0).toString(36)+"."+s.length;
-}
-function localUser(){
-  const t=localStorage.getItem("bm_tok")||"";
-  if(t.indexOf("local:")!==0)return null;
-  const db=locLoad();
-  return db&&db.users?db.users[t.slice(6)]||null:null;
-}
-async function localApi(m,p,b){
-  if(p==="/auth/login"){
-    const id=String(b&&b.id||"").trim().toLowerCase(),pw=String(b&&b.password||"");
-    if(!id||!pw)return {_s:400,ok:false,error:"Gmail/number aur password dono chahiye"};
-    if(pw.length<4)return {_s:400,ok:false,error:"Password kam se kam 4 characters ka hona chahiye"};
-    const db=locInit();
-    let u=db.users[id];
-    if(!u){
-      const first=Object.keys(db.users).length===0;
-      u=db.users[id]={id:id,name:id.indexOf("@")>0?id.split("@")[0]:id,role:first?"Admin":"Manager",status:"active",pw:pwHash(id,pw)};
-    }else if(u.pw!==pwHash(id,pw)){
-      return {_s:401,ok:false,error:"Password galat hai"};
-    }
-    locSave(db);
-    return {_s:200,ok:true,token:"local:"+id,status:u.status,user:{id:u.id,name:u.name,role:u.role}};
-  }
-  const u=localUser();
-  if(!u)return {_s:401,ok:false,error:"Login required"};
-  if(p==="/data"&&m==="GET"){
-    const db=locInit();
-    return {_s:200,ok:true,data:db.data,ver:db.ver,me:{id:u.id,name:u.name,role:u.role}};
-  }
-  if(p==="/data"&&m==="PUT"){
-    const db=locInit();
-    const base=Number(b&&b.base);
-    if(isFinite(base)&&base!==db.ver)return {_s:409,ok:false,conflict:true,data:db.data,ver:db.ver,error:"Data badal gaya"};
-    const next=Object.assign({},b&&b.data||{});
-    for(const k of ["w","adv","ex","inc","mp","fa","sh","nl","a","t","s","cos"])if(next[k]==null)next[k]=(k==="nl"||k==="a")?{}:[];
-    if(!next.bud||typeof next.bud!=="object")next.bud={cat:{},mgr:[]};
-    if(!next.bud.cat||typeof next.bud.cat!=="object")next.bud.cat={};
-    if(!Array.isArray(next.bud.mgr))next.bud.mgr=[];
-    db.data=next;db.ver+=1;db.updatedAt=new Date().toISOString();
-    locSave(db);
-    return {_s:200,ok:true,ver:db.ver};
-  }
-  return {_s:404,ok:false,error:"Not found"};
-}
-function setMode(m){prefsSet({mode:m});MODE=m;location.reload()}
-
-/* ================= api ================= */
-async function api(m,p,b){
-  const h={"Accept":"application/json"};
-  if(m!=="GET")h["Content-Type"]="application/json";
-  if(localStorage.getItem("bm_tok"))h.Authorization="Bearer "+localStorage.getItem("bm_tok");
-  if(MODE==="local")return localApi(m,p,b);
-  const url=(cloudBase()||"")+p;
-  let r;
-  try{
-    r=await fetch(url,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
-  }catch(e){
-    return {_s:0,ok:false,error:"Server se connection nahi bana"};
-  }
-  let j={};
-  try{j=await r.json()}catch(e){}
-  j._s=r.status;j.ok=r.ok;
-  if(r.status===401&&p!=="/auth/login"&&ME){ME=null;setTk("");if(typeof authFail==="function")authFail();}
-  return j;
-}
-const strip=d=>({...d,u:[]});
-
-/* ================= data ================= */
-async function loadData(){
-  const r=await api("GET","/data");
-  if(r.data){D=r.data;fixD();}
-  if(r.me){ME={id:r.me.id,u:r.me.name,r:r.me.role};}
-  VER=r.ver||VER;
-  return r;
-}
-async function save(){
-  const r=await api("PUT","/data",{base:VER,data:strip(D)});
-  if(r.ok){VER=r.ver;}
-  else if(r.conflict&&r.data){D=r.data;fixD();VER=r.ver;say("Data refresh hua — dobara try karein.");}
-  else if(r._s!==401){say("Save nahi hua: "+(r.error||"unknown error"));}
-  render();
-}
-
-/* ================= dialogs ================= */
-function dlg(html){const d=document.getElementById("dlg");d.innerHTML=html;d.showModal();return d}
-function closeDlg(){document.getElementById("dlg").close()}
-function companyOpts(cur){
-  const rows=(D.cos||[]).map((c,i)=>`<option value="${i+1}"${+String(cur).trim()==i+1?" selected":""}>${esc(c.m||"")}${c.x?" (hidden)":""}</option>`);
-  return `<option value="">—</option>${rows.join("")}`;
-}
-
-/* ================= header & nav ================= */
-function hdr(){
-  const modeBadge=MODE==="local"?'<span class="badge" style="background:#fef3e2;color:#b45309">Offline</span>':'<span class="badge" style="background:#e7f5e8;color:#15803d">Cloud</span>';
-  document.getElementById("hdr").innerHTML=`<span class="brand">JBB PANEL</span><span class="user">${modeBadge}<b>${esc(ME&&ME.u?ME.u:"User")}</b>${ME&&ME.r?"· "+esc(ME.r):""}</span><button class="btn ghost sm" id="settings">Settings</button><button class="btn ghost sm" id="logout">Logout</button>`;
-  $("#logout").onclick=()=>{setTk("");location.reload();};
-  $("#settings").onclick=settingsDlg;
-}
-function exportBackup(){
-  try{
-    const payload={app:"jbb-panel",exportedAt:new Date().toISOString(),data:strip(D)};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download="jbb-panel-backup-"+today()+".json";
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
-    say("Backup download shuru hua.");
-  }catch(e){say("Backup nahi bana: "+e.message)}
-}
-function importBackup(file){
-  const fr=new FileReader();
-  fr.onload=()=>{
-    let o;
-    try{o=JSON.parse(fr.result)}catch(e){say("File padhi nahi ja saki — valid JSON nahi hai.");return}
-    const data=o&&o.data?o.data:o;
-    if(!data||typeof data!=="object"||Array.isArray(data)){say("Backup file me data nahi mila.");return}
-    if(!confirm("Purana data replace ho jayega. Aage badhein?"))return;
-    D=data;fixD();save();say("Backup restore ho gaya.");
-  };
-  fr.onerror=()=>say("File read nahi hui.");
-  fr.readAsText(file);
-}
-function settingsDlg(){
-  const p=prefsRaw();
-  const d=dlg(`<h2>Settings</h2>
-  <p class="mu">Data kahan rakhein? <b>Offline</b> = is device ke browser me (koi server nahi chahiye, phone pe bhi chalta hai). <b>Cloud</b> = server pe, sab devices me same data.</p>
-  <label>Storage mode</label>
-  <select id="st-mode" class="input">
-    <option value="local"${MODE==="local"?" selected":""}>Offline — is device me (recommended for phone)</option>
-    <option value="cloud"${MODE==="cloud"?" selected":""}>Cloud — server se sync</option>
-  </select>
-  <label>Cloud server URL (sirf Cloud mode me)</label>
-  <input id="st-base" class="input" placeholder="https://your-app.onrender.com" value="${esc(p.cloudBase||"")}">
-  <div class="acts"><button class="btn big" id="st-save">Save</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>
-  <h2 class="mt">Backup</h2>
-  <p class="mu">Browser ka data delete hone se bachne ke liye backup rakhein. Export ki hui file ko restore bhi kar sakte hain.</p>
-  <div class="acts" style="flex-wrap:wrap">
-    <button class="btn ghost" id="st-export">⬇ Export backup</button>
-    <button class="btn ghost" id="st-import">⬆ Restore backup</button>
-    <input id="st-file" type="file" accept="application/json,.json" style="display:none">
-  </div>
-  <p class="mu mt" style="font-size:11.5px">Offline mode me password sirf screen-lock hai — data device pe plain text me hota hai. Shared phone pe na use karein.</p>`);
-  $("#st-save").onclick=()=>{
-    prefsSet({mode:$("#st-mode").value,cloudBase:$("#st-base").value.trim()});
-    d.close();location.reload();
-  };
-  $("#st-export").onclick=exportBackup;
-  $("#st-import").onclick=()=>$("#st-file").click();
-  $("#st-file").onchange=e=>{
-    const f=e.target.files&&e.target.files[0];
-    if(f){d.close();importBackup(f)}
-  };
-}
-function nav(){
-  const items=[["dash","Dashboard"],["work","Workers"],["adv","Advances"],["ex","Expenses"],["inc","Income"],["sa","Settlements"],["att","Attendance"],["bud","Budgets"],["co","Companies"]];
-  document.getElementById("nav").innerHTML=items.map(([k,l])=>`<button class="${tab===k?"on":""}" onclick="setTab('${k}')">${esc(l)}</button>`).join("");
-}
-function render(){hdr();nav();switch(tab){case "dash":dash();break;case "work":workers();break;case "adv":advances();break;case "ex":expenses();break;case "inc":income();break;case "sa":settlements();break;case "att":attendance();break;case "bud":budgets();break;case "co":companies();break;}}
-
-/* ================= Dashboard ================= */
-function dash(){
-  const adv=D.adv||[],ex=D.ex||[],inc=D.inc||[],sh=D.sh||[];
-  const advT=adv.reduce((s,a)=>s+(+a.amt||0),0);
-  const expT=ex.reduce((s,a)=>s+(+a.amt||0),0);
-  const incT=inc.reduce((s,a)=>s+(+a.amt||0),0);
-  const present=(D.s||[]).filter(s=>D.a[today()+"|"+s.id]==="P").length,total=(D.s||[]).length;
-  document.getElementById("screen").innerHTML=`<h1>Overview</h1>
-  <section class="stats">
-    <div class="stat"><div class="v">${esc((D.w||[]).length)}</div><div class="l">Workers</div></div>
-    <div class="stat"><div class="v">${esc((D.w||[]).filter(w=>!w.wg).length)}</div><div class="l">Workers without wage</div></div>
-    <div class="stat"><div class="v">${esc(adv.length)}</div><div class="l">Advances</div></div>
-    <div class="stat"><div class="v">${num(advT)}</div><div class="l">Advance total</div></div>
-    <div class="stat"><div class="v">${num(expT)}</div><div class="l">Expenses</div></div>
-    <div class="stat"><div class="v">${num(incT)}</div><div class="l">Income</div></div>
-    <div class="stat"><div class="v">${esc(sh.length)}</div><div class="l">Settlements</div></div>
-    <div class="stat"><div class="v">${esc(present+"/"+total)}</div><div class="l">Attendance present</div></div>
-  </section>
-  <table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th class="num">Amount</th><th>Note</th></tr></thead><tbody>
-    ${adv.slice().sort((a,b)=>String(b.d||"").localeCompare(String(a.d||""))).slice(0,10).map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(who(a.w).n||a.w)}</td><td>${esc(TY[a.t]||a.t)}</td><td class="num">${num(a.amt)}</td><td>${esc(a.note||"")}</td></tr>`).join("")||'<tr><td colspan="5" class="mu">Advance data nahi hai.</td></tr>'}
-  </tbody></table>`;
-}
-
-/* ================= Workers ================= */
-function workers(){
-  const el=document.getElementById("screen");
-  const ws=(D.w||[]).filter(w=>!q||String(w.n||"").toLowerCase().includes(q.toLowerCase())||String(w.id).includes(q));
-  el.innerHTML=`<h1>Workers</h1><section class="toolbar"><input id="qw" value="${esc(q)}" placeholder="Name ya ID search karein..."></section>
-  <table><thead><tr><th class="num">ID</th><th>Name</th><th>Company</th><th class="num">Daily wage</th><th>Role</th><th>Mobile</th><th>Email</th><th></th></tr></thead><tbody>
-    ${ws.map(w=>`<tr><td class="num">${esc(w.id)}</td><td>${esc(w.n||"")}</td><td>${esc(cn(w.c))||"—"}</td><td class="num">${num(w.wg)}</td><td>${esc(w.r||"")}</td><td>${esc(w.ph||"")}</td><td>${esc(w.em||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editWorker(${w.id})">Edit</button><button class="btn sm red" onclick="delWorker(${w.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Worker data nahi hai.</td></tr>'}
-  </tbody></table><div class="mt"><button class="btn" id="addW">+ Add worker</button></div>`;
-  $("#qw").oninput=e=>{q=e.target.value;workers();};
-  $("#addW").onclick=addWorker;
-}
-function addWorker(){
-  const d=dlg(`<h2>Add worker</h2>
-  <label>Name</label><input id="a-name" class="input">
-  <label>Company</label><select id="a-company" class="input">${companyOpts("")}</select>
-  <label>Daily wage (₹)</label><input id="a-wage" class="input" type="number" step="0.01">
-  <label>Role</label><input id="a-role" class="input">
-  <label>Mobile</label><input id="a-ph" class="input">
-  <label>Email</label><input id="a-em" class="input">
-  <div class="acts"><button class="btn big" id="a-save">Add worker</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
-  $("#a-save").onclick=()=>{
-    const w={id:nextId(D.w),n:$("#a-name").value.trim(),c:$("#a-company").value,wg:+$("#a-wage").value||0,r:$("#a-role").value.trim(),ph:$("#a-ph").value.trim(),em:$("#a-em").value.trim()};
-    if(!w.n){say("Name likho");return}
-    D.w.push(w);d.close();save();
-  };
-}
-function editWorker(id){
-  const w=(D.w||[]).find(x=>String(x.id)==String(id));
-  if(!w)return;
-  const d=dlg(`<h2>Edit worker</h2>
-  <label>Name</label><input id="e-name" class="input" value="${esc(w.n)}">
-  <label>Company</label><select id="e-company" class="input">${companyOpts(w.c)}</select>
-  <label>Daily wage (₹)</label><input id="e-wage" class="input" type="number" step="0.01" value="${esc(w.wg)}">
-  <label>Role</label><input id="e-role" class="input" value="${esc(w.r)}">
-  <label>Mobile</label><input id="e-ph" class="input" value="${esc(w.ph)}">
-  <label>Email</label><input id="e-em" class="input" value="${esc(w.em)}">
-  <div class="acts"><button class="btn big" id="e-save">Save</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
-  $("#e-save").onclick=()=>{w.n=$("#e-name").value.trim();w.c=$("#e-company").value;w.wg=+$("#e-wage").value||0;w.r=$("#e-role").value.trim();w.ph=$("#e-ph").value.trim();w.em=$("#e-em").value.trim();d.close();save();};
-}
-function delWorker(id){
-  const w=(D.w||[]).find(x=>String(x.id)==String(id));
-  if(!w||!confirm("Worker '"+String(w.n||w.id)+"' delete karein?"))return;
-  D.w.splice(D.w.indexOf(w),1);save();
-}
-
-/* ================= Advances ================= */
-function advances(){
-  const el=document.getElementById("screen");
-  const adv=(D.adv||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(who(a.w).n||"")+" "+TY[a.t]+" "+String(a.amt)).toLowerCase().includes(q.toLowerCase()));
-  el.innerHTML=`<h1>Advances</h1><section class="toolbar"><input id="qadv" value="${esc(q)}" placeholder="Worker, amount, note search karein..."></section>
-  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Worker</th><th>Company</th><th>Type</th><th class="num">Amount</th><th>Note</th><th></th></tr></thead><tbody>
-    ${adv.map(a=>`<tr><td class="num">${esc(a.id)}</td><td>${esc(a.d||"")}</td><td>${esc(who(a.w).n||a.w)}</td><td>${esc(cn(who(a.w).c))}</td><td>${esc(TY[a.t]||a.t)}</td><td class="num">${num(a.amt)}</td><td>${esc(a.note||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editAdv(${a.id})">Edit</button><button class="btn sm red" onclick="delAdv(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Advance data nahi hai.</td></tr>'}
-  </tbody></table><div class="mt"><button class="btn" id="addA">+ Add advance</button></div>`;
-  $("#qadv").oninput=e=>{q=e.target.value;advances();};
-  $("#addA").onclick=addAdv;
-}
-function advForm(title,a,onSave){
-  const d=dlg(`<h2>${title}</h2>
-  <label>Date</label><input id="ad-d" class="input" value="${esc(a?a.d:today())}">
-  <label>Worker</label><select id="ad-w" class="input">${(D.w||[]).map(w=>`<option value="${esc(w.id)}"${a&&String(w.id)==String(a.w)?" selected":""}>${esc(who(w.id).n||w.n||w.id)}</option>`).join("")||'<option>—</option>'}</select>
-  <label>Type</label><select id="ad-t" class="input">${["g","r","n"].map(k=>`<option value="${k}"${a&&a.t===k?" selected":""}>${esc(TY[k])}</option>`).join("")}</select>
-  <label>Amount (₹)</label><input id="ad-amt" class="input" type="number" step="0.01" value="${esc(a?a.amt:0)}">
-  <label>Note</label><input id="ad-note" class="input" value="${esc(a?a.note||"":"")}">
-  <div class="acts"><button class="btn big" id="ad-save">${title}</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
-  $("#ad-save").onclick=()=>onSave(d,{d:$("#ad-d").value||today(),w:+$("#ad-w").value,t:$("#ad-t").value,amt:+$("#ad-amt").value||0,note:$("#ad-note").value.trim()});
-}
-function addAdv(){advForm("Add advance",null,(d,o)=>{const a={id:nextId(D.adv),d:o.d,w:o.w,t:o.t,amt:o.amt,note:o.note};D.adv.push(a);d.close();save();});}
-function editAdv(id){const a=(D.adv||[]).find(x=>String(x.id)==String(id));if(!a)return;advForm("Edit advance",a,(d,o)=>{a.d=o.d;a.w=o.w;a.t=o.t;a.amt=o.amt;a.note=o.note;d.close();save();});}
-function delAdv(id){
-  const a=(D.adv||[]).find(x=>String(x.id)==String(id));
-  if(!a||!confirm("Advance '"+String(a.id)+"' delete karein?"))return;
-  D.adv.splice(D.adv.indexOf(a),1);save();
-}
-
-/* ================= Expenses / Income ================= */
-function expenses(){
-  const el=document.getElementById("screen");
-  const ex=(D.ex||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(a.v)+" "+String(a.cat)+" "+String(a.no)).toLowerCase().includes(q.toLowerCase()));
-  el.innerHTML=`<h1>Expenses</h1><section class="toolbar"><input id="qex" value="${esc(q)}" placeholder="Vendor, category, date search karein..."></section>
-  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Vendor</th><th>Category</th><th>Company</th><th class="num">Amount</th><th>Detail / Invoice</th><th></th></tr></thead><tbody>
-    ${ex.map(a=>`<tr><td class="num">${esc(a.no||a.id||"")}</td><td>${esc(a.d||"")}</td><td>${esc(a.v||"")}</td><td>${esc(a.cat||"")}</td><td>${esc(cn(a.c)||"")}</td><td class="num"><span class="neg">${num(a.amt)}</span></td><td>${esc((a.ds||a.inv)||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editEx(${a.id})">Edit</button><button class="btn sm red" onclick="delEx(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Expense data nahi hai.</td></tr>'}
-  </tbody></table><div class="mt"><button class="btn" id="addX">+ Add expense</button></div>`;
-  $("#qex").oninput=e=>{q=e.target.value;expenses();};
-  $("#addX").onclick=()=>addExI("Add expense","ex",null);
-}
-function income(){
-  const el=document.getElementById("screen");
-  const inc=(D.inc||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(a.v)+" "+String(a.cat)+" "+String(a.no)).toLowerCase().includes(q.toLowerCase()));
-  el.innerHTML=`<h1>Income</h1><section class="toolbar"><input id="qinc" value="${esc(q)}" placeholder="Vendor, category, date search karein..."></section>
-  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Vendor</th><th>Category</th><th>Company</th><th class="num">Amount</th><th>Detail / Invoice</th><th></th></tr></thead><tbody>
-    ${inc.map(a=>`<tr><td class="num">${esc(a.no||a.id||"")}</td><td>${esc(a.d||"")}</td><td>${esc(a.v||"")}</td><td>${esc(a.cat||"")}</td><td>${esc(cn(a.c)||"")}</td><td class="num">${num(a.amt)}</td><td>${esc((a.ds||a.inv)||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editInc(${a.id})">Edit</button><button class="btn sm red" onclick="delInc(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Income data nahi hai.</td></tr>'}
-  </tbody></table><div class="mt"><button class="btn" id="addI">+ Add income</button></div>`;
-  $("#qinc").oninput=e=>{q=e.target.value;income();};
-  $("#addI").onclick=()=>addExI("Add income","inc",null);
-}
-function addExI(title,col,a){
-  const d=dlg(`<h2>${title}</h2>
-  <label>Date</label><input id="ei-d" class="input" value="${esc(a?a.d:today())}">
-  <label>Vendor</label><input id="ei-v" class="input" value="${esc(a?a.v||"":"")}">
-  <label>Category</label><input id="ei-cat" class="input" value="${esc(a?a.cat||"":"")}">
-  <label>Company</label><select id="ei-c" class="input">${companyOpts(a?a.c:"")}</select>
-  <label>Amount (₹)</label><input id="ei-amt" class="input" type="number" step="0.01" value="${esc(a?a.amt:0)}">
-  <label>Detail / Invoice</label><input id="ei-ds" class="input" value="${esc(a?(a.ds||a.inv)||"":"")}">
-  <div class="acts"><button class="btn big" id="ei-save">${title}</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
-  $("#ei-save").onclick=()=>{
-    const o={d:$("#ei-d").value||today(),v:$("#ei-v").value.trim(),cat:$("#ei-cat").value.trim(),c:$("#ei-c").value,amt:+$("#ei-amt").value||0,ds:$("#ei-ds").value.trim()};
-    const row=(D[col]||[]).find(x=>String(x.id)==String(a?a.id:null));
-    if(row){Object.assign(row,o);}
-    else{D[col].push({id:nextId(D[col]),no:nextSeq(D[col]),...o});}
-    d.close();save();
-  };
-}
-function editEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit expense","ex",a);}
-function editInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit income","inc",a);}
-function delEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Expense '"+String(a.v||a.id)+"' delete karein?"))return;D.ex.splice(D.ex.indexOf(a),1);save();}
-function delInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Income '"+String(a.v||a.id)+"' delete karein?"))return;D.inc.splice(D.inc.indexOf(a),1);save();}
-
-/* ================= Settlements (Smart Auto NIL) ================= */
-function settlements(){
-  const el=document.getElementById("screen");
-  const hist=(D.sh||[]).slice().sort((a,b)=>String(b.createdAt||b.id||"").localeCompare(String(a.createdAt||a.id||"")));
-  const nilKeys=Object.keys(D.nl||{});
-  el.innerHTML=`<h1>Settlements (Smart Auto NIL)</h1>
-  <table><thead><tr><th>Worker</th><th>Period</th><th>Status</th><th class="num">Opening</th><th class="num">Advance</th><th class="num">Deductions</th><th class="num">Final balance</th><th>Settlement ID</th><th></th></tr></thead><tbody>
-    ${hist.map(h=>`<tr><td>${esc(h.workerName||who(h.workerId).n||h.workerId)}</td><td>${esc((h.start||"")+" – "+(h.end||h.through||""))}</td><td><span class="badge ${esc(h.status||"")}">${esc(h.status||"")}</span></td><td class="num">${num(h.openingBalance)}</td><td class="num">${num(h.totalAdvance)}</td><td class="num">${num(h.deductions)}</td><td class="num"><span class="${+(h.finalAmount||0)>=0?"pos":"neg"}">${num(h.finalAmount)}</span></td><td>${esc(h.id||"")}</td><td>${h.status==="VERIFIED"?'<button class="btn sm ghost" onclick="undo('+jsq(h.id)+')">Undo</button>':"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="mu">Settlement data nahi hai.</td></tr>'}
-  </tbody></table>
-  ${nilKeys.length?'<h2 class="mt">NIL records ('+nilKeys.length+')</h2><table><thead><tr><th>Worker</th><th>Period</th><th class="num">Net</th><th class="num">Carry</th><th>From</th><th>At</th></tr></thead><tbody>'+nilKeys.map(k=>{const[id,d]=String(k).split("|");const rec=(D.nl||{})[k]||{};return `<tr><td>${esc(who(+id).n||id)}</td><td>${esc(d||"")}</td><td class="num">${num(rec.net)}</td><td class="num">${num(rec.carry)}</td><td>${esc(rec.from||"")}</td><td>${esc(rec.at||"")}</td></tr>`}).join("")+'</tbody></table>':""}`;
-}
-function undo(id){
-  const h=(D.sh||[]).find(x=>String(x.id)===String(id)&&x.status==="VERIFIED");
-  if(!h){say("Settlement is not active, or it was already reversed.");return}
-  const later=(D.sh||[]).some(x=>x.workerId===h.workerId&&x.status==="VERIFIED"&&x.end>h.end);
-  if(later){say("Undo later settlement(s) for this worker first.");return}
-  const key=h.workerId+"|"+h.end,active=D.nl?.[key];
-  if(active?.smartSettlementId!==h.id){say("Active NIL record no longer matches this history item; manual review required.");return}
-  confirmUndo(id);
-}
-function confirmUndo(id){
-  const h=(D.sh||[]).find(x=>String(x.id)===String(id)&&x.status==="VERIFIED");
-  if(!h){say("Settlement is not active.");return}
-  const key=h.workerId+"|"+h.end;
-  if(D.nl?.[key]?.smartSettlementId!==h.id){say("Active NIL changed; undo stopped.");return}
-  const later=(D.sh||[]).some(x=>x.workerId===h.workerId&&x.status==="VERIFIED"&&x.end>h.end);
-  if(later){say("Undo later settlement(s) first.");return}
-  if(h.priorNil)D.nl[key]=h.priorNil;else delete D.nl[key];
-  if(h.revisionOf){const prev=(D.sh||[]).find(x=>String(x.id)===String(h.revisionOf));if(prev&&prev.status==="AMENDED"){prev.status="VERIFIED";delete prev.amendedAt;}}
-  for(const [entryId,previous] of h.priorEntryStatus||[]){const a=D.adv.find(x=>String(x.id)===String(entryId));if(a){if(previous)a.settlementId=previous;else delete a.settlementId;}}
-  h.status="REVERSED";h.reversedAt=new Date().toISOString();
-  save();render();say("Settlement reversed; audit history kept.");
-}
-
-/* ================= Attendance ================= */
-function attendance(){
-  const rows=[];
-  for(const s of D.s||[])rows.push({id:s.id,n:s.n||who(s.id).n||s.id,g:s.g||""});
-  for(const w of D.w||[]){if(!rows.some(r=>String(r.id)==String(w.id)))rows.push({id:w.id,n:w.n||String(w.id),g:""});}
-  const el=document.getElementById("screen");
-  el.innerHTML=`<h1>Attendance</h1><p class="mu">Aaj: ${esc(today())} — Status select karein, save karne ke liye Change.</p>
-  <table><thead><tr><th>Person</th><th>Group</th><th>Date</th><th>Status</th></tr></thead><tbody>
-    ${rows.map(r=>{const key=today()+"|"+r.id,cur=D.a[key]||"";return `<tr><td>${esc(r.n)}</td><td>${esc(r.g||"")}</td><td>${esc(today())}</td><td><select class="at-sel" data-key="${esc(key)}">${["",...Object.keys(ST)].map(v=>`<option value="${esc(v)}"${cur===v?" selected":""}>${v?ST[v]:"—"}</option>`).join("")}</select></td></tr>`}).join("")||'<tr><td colspan="4" class="mu">Attendance data nahi hai.</td></tr>'}
-  </tbody></table>`;
-  el.querySelectorAll("select").forEach(sel=>{sel.onchange=()=>{const k=sel.dataset.key,v=sel.value;if(v)D.a[k]=v;else delete D.a[k];save();say("Save ho gaya.");};});
-}
-
-/* ================= Budgets ================= */
-function budgets(){
-  const el=document.getElementById("screen");
-  const rows=(D.cos||[]).map(c=>{const idx=(D.cos||[]).indexOf(c)+1;const ex=(D.ex||[]).filter(x=>+x.c==idx).reduce((s,x)=>s+(+x.amt||0),0);const inc=(D.inc||[]).filter(x=>+x.c==idx).reduce((s,x)=>s+(+x.amt||0),0);return [esc(c?c.m:""),num(+(D.bud?.mgr?.[idx]||0)),num(ex),num(inc),num(inc-ex)];});
-  const cats=Object.entries(D.bud?.cat||{});
-  el.innerHTML=`<h1>Budgets</h1><table><thead><tr><th>Manager</th><th class="num">Budget</th><th class="num">Expense total</th><th class="num">Income total</th><th class="num">Net ( Income − Expense )</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`).join("")||'<tr><td colspan="5" class="mu">Companies nahi hai.</td></tr>'}
-  </tbody></table>
-  ${cats.length?'<h2 class="mt">Category budgets</h2><table><thead><tr><th>Category</th><th class="num">Budget</th></tr></thead><tbody>'+cats.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${num(v)}</td></tr>`).join("")+'</tbody></table>':""}`;
-}
-
-/* ================= Companies ================= */
-function companies(){
-  const el=document.getElementById("screen");
-  el.innerHTML=`<h1>Companies</h1><table><thead><tr><th>#</th><th>Manager</th><th>Hidden</th></tr></thead><tbody>
-    ${(D.cos||[]).map((c,i)=>`<tr><td>${i+1}</td><td>${esc(c.m||"")}${c.x?"<span class=\"mu\"> (hidden)</span>":""}</td><td>${esc(c.x?"Yes":"No")}</td></tr>`).join("")||'<tr><td colspan="3" class="mu">Companies nahi hai.</td></tr>'}
-  </tbody></table>`;
-}
-
-/* ================= Login ================= */
-function showLogin(){
-  document.getElementById("hdr").innerHTML="";
-  document.getElementById("nav").innerHTML="";
-  document.getElementById("screen").innerHTML=`<div class="login-card">
-    <h1>JBB PANEL</h1>
-    <p class="sub">Koi bhi Gmail ya Mobile number aur password se login karein.</p>
-    ${MODE==="local"?'<p class="mu" style="text-align:center;margin-bottom:14px;font-size:11.5px">Offline mode — data isi device me save hoga</p>':""}
-    <div id="l-err" class="login-err" hidden></div>
-    <label>Gmail / Mobile number</label><input id="l-id" class="input">
-    <label>Password</label><input id="l-pw" class="input" type="password">
-    <div class="acts"><button class="btn big" id="l-btn">Sign in</button></div>
-    <p class="sub mt" style="font-size:12px"><a href="#">Admin access ki request bhejo</a></p>
-  </div>`;
-  $("#l-btn").onclick=()=>login();
-}
-function showErr(m){const e=$("#l-err");if(!e)return;e.hidden=false;e.classList.add("on");e.textContent=m;}
-function clearErr(){const e=$("#l-err");if(e){e.hidden=true;e.classList.remove("on");e.textContent="";}}
-async function login(){
-  const id=$("#l-id").value.trim(),pw=$("#l-pw").value;
-  if(!id||!pw){showErr("Gmail/number aur password likho");return}
-  clearErr();
-  const b=$("#l-btn");b.disabled=true;b.textContent="Signing in…";
-  const r=await api("POST","/auth/login",{id,password:pw});
-  b.disabled=false;b.textContent="Sign in";
-  if(!r.token){showErr(r.error||(r._s===0?"Server se connection nahi bana":"Login nahi hua"));return}
-  setTk(r.token);
-  ME={id:r.user?r.user.id:null,u:r.user?r.user.name:"",r:r.user?r.user.role:""};
-  const lr=await loadData();
-  if(lr._s===401){setTk("");ME=null;showLogin();return}
-  if(lr._s===0){showErr("Server se connection nahi bana");return}
-  render();
-}
-function authFail(){setTk("");ME=null;showLogin();}
-async function start(){
-  const r=await loadData();
-  if(r._s===401){authFail();return}
-  if(r._s===0){authFail();showErr("Server se connection nahi bana");return}
-  if(r.error)say("Server se data nahi mila: "+r.error);
-  render();
-}
-if(typeof confirm==="undefined")window.confirm=()=>true;
-document.addEventListener("DOMContentLoaded",()=>{if(localStorage.getItem("bm_tok"))start();else showLogin();});
-</script>
+<script src="js/core.js"></script>
+<script src="js/accounting.js"></script>
+<script src="js/views-people.js"></script>
+<script src="js/views-money.js"></script>
+<script src="js/views-reports.js"></script>
+<script src="js/boot.js"></script>
 </body>
 </html>

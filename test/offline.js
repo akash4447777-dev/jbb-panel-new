@@ -47,7 +47,7 @@ const localStorage = {
 const ctx = {
   document, localStorage,
   fetch: () => { throw new Error("offline mode must not touch the network"); },
-  URL, console, setTimeout, clearTimeout,
+  URL, URLSearchParams, console, setTimeout, clearTimeout,
   alert: (m) => console.log("[alert]", m), confirm: () => true,
   location: { reload() {}, hostname: "example.github.io", protocol: "https:" },
   Date, Math, JSON, Object, Array, String, Number, Boolean, RegExp, Error

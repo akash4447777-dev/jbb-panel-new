@@ -26,7 +26,13 @@ jobs:
       - name: Offline mode tests (no server required)
         run: node test/offline.js
 
+      - name: Postgres storage layer tests (stubbed, no DB needed)
+        run: node test/pg.js
+
       - name: Cloud server tests
+        env:
+          STORE_MODE: file
+          DATA_DIR: ${{ github.workspace }}/.ci-data
         run: |
           node server.js &
           SERVER_PID=$!

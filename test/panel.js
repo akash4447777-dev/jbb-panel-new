@@ -115,6 +115,42 @@ const ck = (n, c, ex) => { if (c) { pass++; console.log("  ok   " + n); } else {
   await R("loadData()");
   R('fy=fyOf(today());mn="All";co="0";br="0"');
 
+  /* ---------- upgrading an existing panel install ---------- */
+  console.log("\n-- upgrading an existing install --");
+  const oldInstall = {
+    ver: 9,
+    data: {
+      n: 3, nx: 2, ni: 2,
+      cos: [{ m: "JBB CONSTRUCTIONS" }, { m: "SECOND CO" }],
+      w: [{ id: 1, n: "Old Ramesh", c: "1", wg: 500 }],
+      adv: [], ex: [], inc: [], mp: [], fa: [], a: {}, t: {}, s: [], sh: [], nl: {},
+      bud: { cat: {}, mgr: [] }
+    },
+    users: {}, createdAt: "2025-01-01T00:00:00Z"
+  };
+  R("localStorage.setItem('jbb_db_v3'," + JSON.stringify(JSON.stringify(oldInstall)) + ")");
+  R("localStorage.removeItem('bm_tok')");
+  const upLogin = await R('localApi("POST","/auth/login",{id:"owner@jbb.com",password:"mypass123"})');
+  R('localStorage.setItem("bm_tok",' + JSON.stringify(upLogin.token) + ')');
+  const up = await R("loadData()");
+  ck("an existing install keeps its version", up.ver === 9, up.ver);
+  ck("existing workers survive the upgrade", up.data.w.some(w => w.n === "Old Ramesh" && w.wg === 500));
+  ck("existing companies survive", up.data.cos.length === 2 && up.data.cos[0].m === "JBB CONSTRUCTIONS");
+  ck("companies get a display name and x flag", up.data.cos[0].n === "JBB CONSTRUCTIONS" && up.data.cos[0].x === 0);
+  ck("array budgets become an object", !Array.isArray(up.data.bud.mgr));
+  ck("master lists fill in where missing", up.data.m.cat.length > 0 && up.data.m.br.length > 0);
+  ck("upgraded data renders", (() => {
+    try { R('tab="work";render()'); return /Old Ramesh/.test(els.get("screen").innerHTML || ""); } catch (e) { return e.message; }
+  })() === true);
+
+  /* back to a clean seeded install for the rest of the suite */
+  R("localStorage.removeItem('jbb_db_v3');localStorage.removeItem('bm_tok');D=migrate();localDbInit()");
+  const reseed = await R('localApi("POST","/auth/login",{id:"owner@jbb.com",password:"jbb12345"})');
+  R('localStorage.setItem("bm_tok",' + JSON.stringify(reseed.token) + ')');
+  R('ME={id:"owner@jbb.com",name:"owner",role:"super"}');
+  await R("loadData()");
+  R('fy=fyOf(today());mn="All";co="0";br="0"');
+
   console.log("\n-- money maths --");
   ck("GST 18% on 1000 = 180", R('gs({amt:1000,g:0.18})') === 180, R('gs({amt:1000,g:0.18})'));
   ck("gross = 1180", R('tot({amt:1000,g:0.18})') === 1180);

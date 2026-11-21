@@ -255,6 +255,31 @@ function hdr(){
   $("#logout").onclick=()=>{setTk("");location.reload();};
   $("#settings").onclick=settingsDlg;
 }
+function exportBackup(){
+  try{
+    const payload={app:"jbb-panel",exportedAt:new Date().toISOString(),data:strip(D)};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="jbb-panel-backup-"+today()+".json";
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+    say("Backup download shuru hua.");
+  }catch(e){say("Backup nahi bana: "+e.message)}
+}
+function importBackup(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let o;
+    try{o=JSON.parse(fr.result)}catch(e){say("File padhi nahi ja saki — valid JSON nahi hai.");return}
+    const data=o&&o.data?o.data:o;
+    if(!data||typeof data!=="object"||Array.isArray(data)){say("Backup file me data nahi mila.");return}
+    if(!confirm("Purana data replace ho jayega. Aage badhein?"))return;
+    D=data;fixD();save();say("Backup restore ho gaya.");
+  };
+  fr.onerror=()=>say("File read nahi hui.");
+  fr.readAsText(file);
+}
 function settingsDlg(){
   const p=prefsRaw();
   const d=dlg(`<h2>Settings</h2>
@@ -267,10 +292,23 @@ function settingsDlg(){
   <label>Cloud server URL (sirf Cloud mode me)</label>
   <input id="st-base" class="input" placeholder="https://your-app.onrender.com" value="${esc(p.cloudBase||"")}">
   <div class="acts"><button class="btn big" id="st-save">Save</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>
+  <h2 class="mt">Backup</h2>
+  <p class="mu">Browser ka data delete hone se bachne ke liye backup rakhein. Export ki hui file ko restore bhi kar sakte hain.</p>
+  <div class="acts" style="flex-wrap:wrap">
+    <button class="btn ghost" id="st-export">⬇ Export backup</button>
+    <button class="btn ghost" id="st-import">⬆ Restore backup</button>
+    <input id="st-file" type="file" accept="application/json,.json" style="display:none">
+  </div>
   <p class="mu mt" style="font-size:11.5px">Offline mode me password sirf screen-lock hai — data device pe plain text me hota hai. Shared phone pe na use karein.</p>`);
   $("#st-save").onclick=()=>{
     prefsSet({mode:$("#st-mode").value,cloudBase:$("#st-base").value.trim()});
     d.close();location.reload();
+  };
+  $("#st-export").onclick=exportBackup;
+  $("#st-import").onclick=()=>$("#st-file").click();
+  $("#st-file").onchange=e=>{
+    const f=e.target.files&&e.target.files[0];
+    if(f){d.close();importBackup(f)}
   };
 }
 function nav(){

@@ -109,11 +109,23 @@ function setTab(k){tab=k;q="";render();}
 const LKEY="jbb_local_db",PKEY="jbb_prefs";
 function prefsRaw(){try{return JSON.parse(localStorage.getItem(PKEY)||"{}")}catch(e){return {}}}
 function prefsSet(o){try{localStorage.setItem(PKEY,JSON.stringify(Object.assign(prefsRaw(),o)))}catch(e){}}
-let MODE=(function(){
+/* Mode resolution order:
+   1. ?api=https://… on the URL   -> cloud, that server (shareable one-liner)
+   2. saved preference in Settings
+   3. hostname heuristic (static hosts -> offline, otherwise cloud) */
+let MODE="cloud";
+(function(){
+  const qs=new URLSearchParams(location.search||"");
+  const api=String(qs.get("api")||"").trim();
+  if(/^https?:\/\//.test(api)){
+    prefsSet({mode:"cloud",cloudBase:api.replace(/\/+$/,"")});
+    MODE="cloud";
+    return;
+  }
   const p=prefsRaw();
-  if(p.mode==="local"||p.mode==="cloud")return p.mode;
+  if(p.mode==="local"||p.mode==="cloud"){MODE=p.mode;return}
   const h=String(location.hostname||"");
-  return (location.protocol==="file:"||/\.github\.io$/.test(h)||/\.pages\.dev$/.test(h))?"local":"cloud";
+  MODE=(location.protocol==="file:"||/\.github\.io$/.test(h)||/\.pages\.dev$/.test(h))?"local":"cloud";
 })();
 function cloudBase(){return String(prefsRaw().cloudBase||"").replace(/\/+$/,"")}
 function localSeed(){

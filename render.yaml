@@ -1,0 +1,42 @@
+# Render Blueprint — one-click Cloud deploy
+#
+# Deploys the JBB PANEL Node server plus a managed Postgres database, so data
+# survives restarts and redeploys (Render's disk is ephemeral on free plans).
+#
+# How to use:
+#   1. Go to https://render.com/deploy?repo=https://github.com/akash4447777-dev/jbb-panel-new
+#   2. Sign in with GitHub, approve the repo
+#   3. Click "Apply" — Render creates the service and the database
+#
+# STORE_MODE=DATABASE_URL is wired automatically by `fromDatabase` below.
+
+services:
+  - type: web
+    name: jbb-panel
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm ci --omit=dev || npm install --omit=dev
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: STORE_MODE
+        value: postgres
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jbb-panel-db
+          property: connectionString
+      # Signs login tokens. Render generates a fresh strong value.
+      - key: JBB_SECRET
+        generateValue: true
+
+databases:
+  - name: jbb-panel-db
+    databaseName: jbb_panel
+    user: jbb
+    plan: free
+    region: oregon

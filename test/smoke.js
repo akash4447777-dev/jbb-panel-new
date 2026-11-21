@@ -69,6 +69,7 @@ const ctx = {
   localStorage,
   fetch: (u, o) => fetch(new URL(u, BASE), o),
   URL,
+  URLSearchParams,
   console,
   setTimeout,
   clearTimeout,

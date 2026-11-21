@@ -19,6 +19,22 @@ This static deployment runs in **Offline mode**: data is stored in your browser'
 all CRUD operations, settlements and attendance work. Use **Settings** in the top-right
 to switch between Offline and Cloud storage.
 
+## Syncing across devices (Cloud mode)
+
+The Pages link keeps data **per device** (browser `localStorage`). To share one dataset
+across phone, laptop and employees, deploy the included Node server — one click:
+
+**https://render.com/deploy?repo=https://github.com/akash4447777-dev/jbb-panel-new**
+
+Then open the panel with `?api=` pointing at it:
+
+```
+https://akash4447777-dev.github.io/jbb-panel-new/?api=https://YOUR-APP.onrender.com
+```
+
+Full instructions, alternatives (Railway, VPS) and the free-tier caveats:
+**[DEPLOY.md](DEPLOY.md)**.
+
 ## Two ways to run
 
 | | Offline (GitHub Pages) | Cloud (this repo's Node server) |

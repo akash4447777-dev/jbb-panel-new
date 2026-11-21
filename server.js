@@ -113,28 +113,52 @@ function freshStore() {
 
 let store = freshStore();
 
-function loadStore() {
+/* ------------------------------------------------------------------ *
+ * persistence: "file" (default, local/VPS) or "postgres" (cloud)
+ *
+ * Postgres keeps ONE row holding the whole JSON document, matching the file
+ * semantics exactly: reads are served from memory, every write replaces the
+ * document and bumps ver. This keeps the API contract identical on every host
+ * and avoids a schema migration.
+ *
+ *   DATABASE_URL=postgres://...  -> postgres mode
+ *   STORE_MODE=postgres|file     -> force a mode
+ * ------------------------------------------------------------------ */
+const STORE_MODE =
+  process.env.STORE_MODE ||
+  (process.env.DATABASE_URL || process.env.POSTGRES_URL ? "postgres" : "file");
+const PG_URL = process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+const PG_TABLE = process.env.PG_TABLE || "jbb_store";
+
+let pool = null;
+let pgReady = false;
+
+function normalise(parsed) {
+  const data = parsed.data && typeof parsed.data === "object" ? parsed.data : seedData();
+  return {
+    ver: Number(parsed.ver) || 0,
+    data,
+    users: parsed.users && typeof parsed.users === "object" ? parsed.users : {},
+    createdAt: parsed.createdAt || nowIso(),
+    updatedAt: parsed.updatedAt || nowIso()
+  };
+}
+
+/* ---------------- file backend ---------------- */
+function loadStoreFile() {
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf8");
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") throw new Error("bad store");
-    store = {
-      ver: Number(parsed.ver) || 0,
-      data: parsed.data && typeof parsed.data === "object" ? parsed.data : seedData(),
-      users: parsed.users && typeof parsed.users === "object" ? parsed.users : {},
-      createdAt: parsed.createdAt || nowIso(),
-      updatedAt: parsed.updatedAt || nowIso()
-    };
+    store = normalise(JSON.parse(raw));
     return store;
   } catch (e) {
     if (e.code !== "ENOENT") console.error("[store] load failed:", e.message, "— starting from seed");
     store = freshStore();
-    persist();
+    persistFile();
     return store;
   }
 }
 
-function persist() {
+function persistFile() {
   try {
     fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
     const tmp = DATA_FILE + ".tmp";
@@ -143,6 +167,87 @@ function persist() {
   } catch (e) {
     console.error("[store] persist failed:", e.message);
   }
+}
+
+/* ---------------- postgres backend ---------------- */
+function pgClient() {
+  if (!pgReady) {
+    console.error(
+      "[store] DATABASE_URL is set but the 'pg' package is not installed.\n" +
+        "        Run: npm install pg    (or set STORE_MODE=file)"
+    );
+    return null;
+  }
+  return pool;
+}
+
+function pgInit() {
+  try {
+    const { Pool } = require("pg");
+    pool = new Pool({
+      connectionString: PG_URL,
+      ssl: /localhost|127\.0\.0\.1/.test(PG_URL) ? false : { rejectUnauthorized: false },
+      max: Number(process.env.PG_POOL_MAX || 5)
+    });
+    pgReady = true;
+    return true;
+  } catch (e) {
+    console.error("[store] could not load pg:", e.message);
+    return false;
+  }
+}
+
+async function loadStorePg() {
+  if (!pgInit()) {
+    console.error("[store] falling back to file storage");
+    return loadStoreFile();
+  }
+  const c = pgClient();
+  await c.query(
+    `CREATE TABLE IF NOT EXISTS ${PG_TABLE} (
+       id         integer PRIMARY KEY DEFAULT 1,
+       doc        jsonb   NOT NULL,
+       updated_at timestamptz NOT NULL DEFAULT now(),
+       CONSTRAINT ${PG_TABLE}_single_row CHECK (id = 1)
+     )`
+  );
+  const r = await c.query(`SELECT doc FROM ${PG_TABLE} WHERE id = 1`);
+  if (!r.rows.length) {
+    store = freshStore();
+    await c.query(`INSERT INTO ${PG_TABLE} (id, doc) VALUES (1, $1)`, [JSON.stringify(store)]);
+    console.log("[store] postgres: seeded a new document");
+    return store;
+  }
+  store = normalise(r.rows[0].doc);
+  console.log("[store] postgres: loaded (ver " + store.ver + ", users " + Object.keys(store.users).length + ")");
+  return store;
+}
+
+async function persistPg() {
+  const c = pgClient();
+  if (!c) return;
+  try {
+    await c.query(
+      `INSERT INTO ${PG_TABLE} (id, doc, updated_at) VALUES (1, $1, now())
+       ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`,
+      [JSON.stringify(store)]
+    );
+  } catch (e) {
+    console.error("[store] postgres persist failed:", e.message);
+  }
+}
+
+/* ---------------- dispatchers ---------------- */
+function loadStore() {
+  if (STORE_MODE !== "postgres") return loadStoreFile();
+  // synchronous callers (boot) get the seed; boot() awaits the async load
+  return store;
+}
+
+function persist() {
+  if (STORE_MODE !== "postgres") return persistFile();
+  // fire-and-forget: the response must not wait on disk, but errors are logged
+  persistPg().catch((e) => console.error("[store] persist error:", e.message));
 }
 
 /* ------------------------------------------------------------------ *
@@ -439,12 +544,28 @@ function boot() {
       }
     }
   }
-  store = loadStore();
-  if (!store.ver) persist();
+  if (STORE_MODE === "postgres") {
+    loadStorePg()
+      .catch((e) => {
+        console.error("[store] postgres unavailable:", e.message, "— falling back to file");
+        loadStoreFile();
+      })
+      .finally(listen);
+  } else {
+    loadStoreFile();
+    listen();
+  }
+}
 
+function listen() {
+  if (!store.ver) persist();
   server.listen(PORT, HOST, () => {
     console.log("JBB PANEL running on http://" + HOST + ":" + PORT);
-    console.log("Store: " + DATA_FILE + " (ver " + store.ver + ")");
+    console.log(
+      "Store: " +
+        (STORE_MODE === "postgres" ? "postgres (table " + PG_TABLE + ")" : DATA_FILE) +
+        " (ver " + store.ver + ")"
+    );
   });
 }
 

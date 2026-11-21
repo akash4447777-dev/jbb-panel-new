@@ -101,14 +101,118 @@ function fixD(){for(const k of ["w","adv","ex","inc","mp","fa","sh","nl","a","t"
 function setTk(t){t?localStorage.setItem("bm_tok",t):localStorage.removeItem("bm_tok")}
 function setTab(k){tab=k;q="";render();}
 
+/* ================= offline-first local backend =================
+   GitHub Pages / file:// pe koi server nahi hota, isliye data browser ke
+   localStorage me rakha jata hai. Cloud mode bhi available hai (settings).
+   NOTE: offline mode me password sirf screen-lock hai — data device pe hi
+   plain text me hai. */
+const LKEY="jbb_local_db",PKEY="jbb_prefs";
+function prefsRaw(){try{return JSON.parse(localStorage.getItem(PKEY)||"{}")}catch(e){return {}}}
+function prefsSet(o){try{localStorage.setItem(PKEY,JSON.stringify(Object.assign(prefsRaw(),o)))}catch(e){}}
+let MODE=(function(){
+  const p=prefsRaw();
+  if(p.mode==="local"||p.mode==="cloud")return p.mode;
+  const h=String(location.hostname||"");
+  return (location.protocol==="file:"||/\.github\.io$/.test(h)||/\.pages\.dev$/.test(h))?"local":"cloud";
+})();
+function cloudBase(){return String(prefsRaw().cloudBase||"").replace(/\/+$/,"")}
+function localSeed(){
+  const D2=(n)=>{const d=new Date(Date.now()-n*86400000);return d.toISOString().slice(0,10)};
+  return {
+    w:[{id:1,n:"Ramesh Kumar",c:"1",wg:550,r:"Mason",ph:"9810012345",em:"ramesh@example.com"},
+       {id:2,n:"Suresh Yadav",c:"1",wg:500,r:"Helper",ph:"9810012346",em:""},
+       {id:3,n:"Mahesh Singh",c:"2",wg:600,r:"Carpenter",ph:"9810012347",em:""},
+       {id:4,n:"Anil Sharma",c:"2",wg:480,r:"Helper",ph:"9810012348",em:""},
+       {id:5,n:"Vijay Verma",c:"1",wg:0,r:"Painter",ph:"9810012349",em:""}],
+    adv:[{id:1,d:D2(9),w:1,t:"g",amt:5000,note:"Ghar ke liye"},
+         {id:2,d:D2(7),w:2,t:"g",amt:3000,note:"Medical"},
+         {id:3,d:D2(5),w:3,t:"g",amt:7500,note:"School fees"},
+         {id:4,d:D2(3),w:1,t:"r",amt:2000,note:"Wapas kiya"},
+         {id:5,d:D2(2),w:4,t:"g",amt:2500,note:"Travel"}],
+    ex:[{id:1,no:1,d:D2(10),v:"Sharma Cement Store",cat:"Material",c:"1",amt:48500,ds:"INV-2201"},
+        {id:2,no:2,d:D2(6),v:"Gupta Steel",cat:"Material",c:"1",amt:72500,ds:"INV-2233"},
+        {id:3,no:3,d:D2(4),v:"Truck Rentals",cat:"Transport",c:"2",amt:12500,ds:"TR-118"}],
+    inc:[{id:1,no:1,d:D2(8),v:"Mehra Builders",cat:"Contract",c:"1",amt:150000,ds:"RC-551"},
+         {id:2,no:2,d:D2(2),v:"Sunrise Infra",cat:"Contract",c:"2",amt:92000,ds:"RC-560"}],
+    mp:[],fa:[],sh:[],nl:{},a:{},t:[],s:[],
+    cos:[{m:"JBB Constructions",x:false},{m:"JBB Infra",x:false}],
+    bud:{cat:{Material:200000,Transport:50000,Salary:150000},mgr:[250000,150000]}
+  };
+}
+function locLoad(){
+  try{const o=JSON.parse(localStorage.getItem(LKEY)||"null");if(o&&o.data)return o}catch(e){}
+  return null;
+}
+function locInit(){
+  let db=locLoad();
+  if(!db){db={ver:0,data:localSeed(),users:{},createdAt:new Date().toISOString()};locSave(db)}
+  return db;
+}
+function locSave(db){
+  try{localStorage.setItem(LKEY,JSON.stringify(db));return true}
+  catch(e){say("Device storage full — export karke space banayein.");return false}
+}
+/* deterministic device-local hash: screen lock only, not cryptographic security */
+function pwHash(id,pw){
+  let h=5381;const s=id+"\u0001"+pw;
+  for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return "h"+(h>>>0).toString(36)+"."+s.length;
+}
+function localUser(){
+  const t=localStorage.getItem("bm_tok")||"";
+  if(t.indexOf("local:")!==0)return null;
+  const db=locLoad();
+  return db&&db.users?db.users[t.slice(6)]||null:null;
+}
+async function localApi(m,p,b){
+  if(p==="/auth/login"){
+    const id=String(b&&b.id||"").trim().toLowerCase(),pw=String(b&&b.password||"");
+    if(!id||!pw)return {_s:400,ok:false,error:"Gmail/number aur password dono chahiye"};
+    if(pw.length<4)return {_s:400,ok:false,error:"Password kam se kam 4 characters ka hona chahiye"};
+    const db=locInit();
+    let u=db.users[id];
+    if(!u){
+      const first=Object.keys(db.users).length===0;
+      u=db.users[id]={id:id,name:id.indexOf("@")>0?id.split("@")[0]:id,role:first?"Admin":"Manager",status:"active",pw:pwHash(id,pw)};
+    }else if(u.pw!==pwHash(id,pw)){
+      return {_s:401,ok:false,error:"Password galat hai"};
+    }
+    locSave(db);
+    return {_s:200,ok:true,token:"local:"+id,status:u.status,user:{id:u.id,name:u.name,role:u.role}};
+  }
+  const u=localUser();
+  if(!u)return {_s:401,ok:false,error:"Login required"};
+  if(p==="/data"&&m==="GET"){
+    const db=locInit();
+    return {_s:200,ok:true,data:db.data,ver:db.ver,me:{id:u.id,name:u.name,role:u.role}};
+  }
+  if(p==="/data"&&m==="PUT"){
+    const db=locInit();
+    const base=Number(b&&b.base);
+    if(isFinite(base)&&base!==db.ver)return {_s:409,ok:false,conflict:true,data:db.data,ver:db.ver,error:"Data badal gaya"};
+    const next=Object.assign({},b&&b.data||{});
+    for(const k of ["w","adv","ex","inc","mp","fa","sh","nl","a","t","s","cos"])if(next[k]==null)next[k]=(k==="nl"||k==="a")?{}:[];
+    if(!next.bud||typeof next.bud!=="object")next.bud={cat:{},mgr:[]};
+    if(!next.bud.cat||typeof next.bud.cat!=="object")next.bud.cat={};
+    if(!Array.isArray(next.bud.mgr))next.bud.mgr=[];
+    db.data=next;db.ver+=1;db.updatedAt=new Date().toISOString();
+    locSave(db);
+    return {_s:200,ok:true,ver:db.ver};
+  }
+  return {_s:404,ok:false,error:"Not found"};
+}
+function setMode(m){prefsSet({mode:m});MODE=m;location.reload()}
+
 /* ================= api ================= */
 async function api(m,p,b){
   const h={"Accept":"application/json"};
   if(m!=="GET")h["Content-Type"]="application/json";
   if(localStorage.getItem("bm_tok"))h.Authorization="Bearer "+localStorage.getItem("bm_tok");
+  if(MODE==="local")return localApi(m,p,b);
+  const url=(cloudBase()||"")+p;
   let r;
   try{
-    r=await fetch(p,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
+    r=await fetch(url,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
   }catch(e){
     return {_s:0,ok:false,error:"Server se connection nahi bana"};
   }
@@ -146,8 +250,28 @@ function companyOpts(cur){
 
 /* ================= header & nav ================= */
 function hdr(){
-  document.getElementById("hdr").innerHTML=`<span class="brand">JBB PANEL</span><span class="user"><b>${esc(ME&&ME.u?ME.u:"User")}</b>${ME&&ME.r?"· "+esc(ME.r):""}</span><button class="btn ghost sm" id="logout">Logout</button>`;
+  const modeBadge=MODE==="local"?'<span class="badge" style="background:#fef3e2;color:#b45309">Offline</span>':'<span class="badge" style="background:#e7f5e8;color:#15803d">Cloud</span>';
+  document.getElementById("hdr").innerHTML=`<span class="brand">JBB PANEL</span><span class="user">${modeBadge}<b>${esc(ME&&ME.u?ME.u:"User")}</b>${ME&&ME.r?"· "+esc(ME.r):""}</span><button class="btn ghost sm" id="settings">Settings</button><button class="btn ghost sm" id="logout">Logout</button>`;
   $("#logout").onclick=()=>{setTk("");location.reload();};
+  $("#settings").onclick=settingsDlg;
+}
+function settingsDlg(){
+  const p=prefsRaw();
+  const d=dlg(`<h2>Settings</h2>
+  <p class="mu">Data kahan rakhein? <b>Offline</b> = is device ke browser me (koi server nahi chahiye, phone pe bhi chalta hai). <b>Cloud</b> = server pe, sab devices me same data.</p>
+  <label>Storage mode</label>
+  <select id="st-mode" class="input">
+    <option value="local"${MODE==="local"?" selected":""}>Offline — is device me (recommended for phone)</option>
+    <option value="cloud"${MODE==="cloud"?" selected":""}>Cloud — server se sync</option>
+  </select>
+  <label>Cloud server URL (sirf Cloud mode me)</label>
+  <input id="st-base" class="input" placeholder="https://your-app.onrender.com" value="${esc(p.cloudBase||"")}">
+  <div class="acts"><button class="btn big" id="st-save">Save</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>
+  <p class="mu mt" style="font-size:11.5px">Offline mode me password sirf screen-lock hai — data device pe plain text me hota hai. Shared phone pe na use karein.</p>`);
+  $("#st-save").onclick=()=>{
+    prefsSet({mode:$("#st-mode").value,cloudBase:$("#st-base").value.trim()});
+    d.close();location.reload();
+  };
 }
 function nav(){
   const items=[["dash","Dashboard"],["work","Workers"],["adv","Advances"],["ex","Expenses"],["inc","Income"],["sa","Settlements"],["att","Attendance"],["bud","Budgets"],["co","Companies"]];
@@ -368,6 +492,7 @@ function showLogin(){
   document.getElementById("screen").innerHTML=`<div class="login-card">
     <h1>JBB PANEL</h1>
     <p class="sub">Koi bhi Gmail ya Mobile number aur password se login karein.</p>
+    ${MODE==="local"?'<p class="mu" style="text-align:center;margin-bottom:14px;font-size:11.5px">Offline mode — data isi device me save hoga</p>':""}
     <div id="l-err" class="login-err" hidden></div>
     <label>Gmail / Mobile number</label><input id="l-id" class="input">
     <label>Password</label><input id="l-pw" class="input" type="password">

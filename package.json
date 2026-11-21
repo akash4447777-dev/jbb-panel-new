@@ -2,16 +2,18 @@
   "name": "jbb-panel",
   "version": "1.0.0",
   "private": true,
-  "description": "JBB PANEL \u2014 workers, advances, expenses, income, settlements, attendance, budgets",
+  "description": "JBB PANEL — workers, advances, expenses, income, settlements, attendance, budgets",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "health": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then(r=>r.text()).then(console.log)\"",
-    "test": "node test/offline.js && node test/pg.js && node test/smoke.js",
-    "test:offline": "node test/offline.js",
+    "test": "node test/panel.js && node test/pg.js && node test/smoke.js",
+    "test:offline": "node test/panel.js",
     "test:cloud": "node test/smoke.js",
-    "test:pg": "node test/pg.js"
+    "test:pg": "node test/pg.js",
+    "test:panel": "node test/panel.js",
+    "test:lint": "node -e \"const fs=require('fs');['core','accounting','views-people','views-money','views-reports','boot'].forEach(f=>require('child_process').execFileSync(process.execPath,['--check','js/'+f+'.js']));console.log('all js files parse')\""
   },
   "engines": {
     "node": ">=18"

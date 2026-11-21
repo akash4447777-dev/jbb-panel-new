@@ -216,6 +216,22 @@ const ck = (n, c, ex) => { if (c) { pass++; console.log("  ok   " + n); } else {
   ck("funds: advances view", (els.get("screen").innerHTML || "").length > 150);
   R("tab='fund';fv='d';render()");
 
+  /* ---------- budgets ---------- */
+  console.log("\n-- budgets --");
+  R("D.bud={cat:{},mgr:{}}");
+  R("setB(0,D.m.cat.indexOf('Miscellaneous'),25000)");
+  ck("category budget stores", R('D.bud.cat["Miscellaneous"]') === 25000, R('JSON.stringify(D.bud.cat)'));
+  R("setB(1,0,15000)");
+  ck("manager budget stores 1-based", R('D.bud.mgr["1"]') === 15000, R('JSON.stringify(D.bud.mgr)'));
+  ck("manager budgets are an object, not an array", !Array.isArray(R("D.bud.mgr")));
+  /* an older server returned an array here — migrate() must normalise it */
+  R("D.bud={cat:{},mgr:[null,7000,3000]};migrate()");
+  ck("legacy array budgets normalise", R('D.bud.mgr["1"]') === 7000 && R('D.bud.mgr["2"]') === 3000 && !Array.isArray(R("D.bud.mgr")), R("JSON.stringify(D.bud.mgr)"));
+  R("D.bud={cat:{},mgr:{}}");
+  /* setB() commits, which bumps the stored version — resync so the
+     persistence block below starts from the current base */
+  R("VER=dbLoadLocal().ver");
+
   /* ---------- persistence ---------- */
   console.log("\n-- persistence --");
   const s1 = await R("save()");

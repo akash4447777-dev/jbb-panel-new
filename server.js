@@ -649,9 +649,15 @@ async function handlePutData(req, res) {
   for (const k of ["w", "adv", "ex", "inc", "mp", "fa", "sh", "nl", "a", "t", "s", "cos"]) {
     if (next[k] === undefined || next[k] === null) next[k] = k === "nl" || k === "a" ? {} : [];
   }
-  if (!next.bud || typeof next.bud !== "object") next.bud = { cat: {}, mgr: [] };
-  if (!next.bud.cat || typeof next.bud.cat !== "object") next.bud.cat = {};
-  if (!Array.isArray(next.bud.mgr)) next.bud.mgr = [];
+  if (!next.bud || typeof next.bud !== "object") next.bud = { cat: {}, mgr: {} };
+  if (!next.bud.cat || typeof next.bud.cat !== "object" || Array.isArray(next.bud.cat)) next.bud.cat = {};
+  /* the panel keys manager budgets 1-based by manager index: { "1": 5000 } */
+  if (!next.bud.mgr || typeof next.bud.mgr !== "object") next.bud.mgr = {};
+  if (Array.isArray(next.bud.mgr)) {
+    const o = {};
+    next.bud.mgr.forEach((v, i) => { if (i > 0 && v) o[String(i)] = v; });
+    next.bud.mgr = o;
+  }
 
   store.data = next;
   store.ver += 1;

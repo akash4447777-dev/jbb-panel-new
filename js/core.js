@@ -118,8 +118,14 @@ function migrate() {
   if (!D.m || typeof D.m !== "object") D.m = JSON.parse(JSON.stringify(DM_DEF));
   for (const k of ["cat", "sub", "dep", "br", "md", "src", "gst"]) if (!D.m[k]) D.m[k] = JSON.parse(JSON.stringify(DM_DEF[k]));
   if (!D.bud) D.bud = { cat: {}, mgr: {} };
-  if (!D.bud.cat) D.bud.cat = {};
+  if (!D.bud.cat || typeof D.bud.cat !== "object") D.bud.cat = {};
   if (!D.bud.mgr) D.bud.mgr = {};
+  /* an older server stored manager budgets as an array; normalise to { "1": amt } */
+  if (Array.isArray(D.bud.mgr)) {
+    const o = {};
+    D.bud.mgr.forEach((v, i) => { if (i > 0 && v) o[String(i)] = v; });
+    D.bud.mgr = o;
+  }
   if (!D.opt) D.opt = { pw: 0, title: "JBB PANEL" };
   D.n = Math.max(+D.n || 1, 1);
   D.nx = Math.max(+D.nx || 1, 1);

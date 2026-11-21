@@ -67,5 +67,19 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # deploy-pages occasionally fails with a transient error even when the
+      # artifact is valid (seen twice in this repo). Retry before giving up.
       - id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Retry deploy once after a transient Pages failure
+        id: retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+
+      - name: Fail the job if both attempts failed
+        if: steps.deployment.outcome == 'failure' && steps.retry.outcome == 'failure'
+        run: |
+          echo "Both deploy attempts failed."
+          exit 1

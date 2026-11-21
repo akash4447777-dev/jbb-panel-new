@@ -130,6 +130,16 @@ function check(name, cond) {
   const bad = await vm.runInContext('localApi("POST","/auth/login",{id:"worker@jbb.com",password:"nope"})', ctx2);
   check("wrong password rejected offline", bad._s === 401 && /galat/.test(bad.error));
 
+  // backup export/restore
+  // load D from the store first, exactly like start() does
+  vm.runInContext('D=locLoad().data; VER=locLoad().ver; fixD();', ctx2);
+  const backupJson = vm.runInContext('JSON.stringify({app:"jbb-panel",data:strip(D)})', ctx2);
+  check("backup payload contains data", backupJson.includes('"adv"') && backupJson.includes('"w"'));
+  const parsed = JSON.parse(backupJson);
+  check("backup has advances", Array.isArray(parsed.data.adv) && parsed.data.adv.length > 0);
+  check("backup export fn exists", vm.runInContext('typeof exportBackup==="function"', ctx2));
+  check("backup import fn exists", vm.runInContext('typeof importBackup==="function"', ctx2));
+
   console.log("\n" + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);
 })().catch((e) => { console.error("FATAL:", e); process.exit(1); });

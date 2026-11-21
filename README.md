@@ -6,8 +6,13 @@ backend (`server.js`).
 
 ## Live panel
 
-**Public link (works on any phone, no setup):** see the GitHub Pages URL under
-*Settings → Pages* of this repo — `https://akash4447777-dev.github.io/jbb-panel-new/`
+### https://akash4447777-dev.github.io/jbb-panel-new/
+
+Works on any device — laptop, phone, tablet. No install, no server, no login to GitHub.
+Deployed automatically from `main` on every push via GitHub Actions.
+
+**First-time login:** any Gmail address or mobile number + a password of 4+ characters.
+The first account created becomes `Admin`.
 
 This static deployment runs in **Offline mode**: data is stored in your browser's
 `localStorage`, so there is no server to run and no login round-trip. All nine screens,
@@ -27,6 +32,13 @@ to switch between Offline and Cloud storage.
 \* Offline mode has no server to verify against, so the password is only a device
 screen-lock and the data sits on the device in plain text. For a shared or sensitive
 deployment use Cloud mode.
+
+### Backing up offline data
+
+Offline data lives in the browser's `localStorage`, so clearing site data or using
+private browsing will erase it. **Settings → Export backup** downloads a JSON file;
+**Restore backup** loads it back on any device. Do this before clearing browser data
+or switching phones.
 
 ## Quick start
 

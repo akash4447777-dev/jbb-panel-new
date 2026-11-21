@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>JBB PANEL — New UI</title>
+<style>
+:root{--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--card:#fff;--bg:#f2f4f7;--ac:#16a34a;--red:#dc2626;--warn:#d97706;--bd:#cbd5e1}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:inherit;text-decoration:none}
+small,.mu{font-size:12px;color:var(--muted)}
+h1{margin:0 0 14px;font-size:22px;font-weight:800;color:#0f172a}
+h2{margin:0 0 10px;font-size:15px;font-weight:800;color:#0f172a}
+section{margin-bottom:16px}
+.mt{margin-top:12px}
+.topbar{position:sticky;top:0;z-index:12;display:flex;align-items:center;gap:12px;justify-content:space-between;padding:11px 18px;background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;box-shadow:0 2px 12px rgba(15,23,42,.12)}
+.brand{font-size:19px;font-weight:800;letter-spacing:.01em;white-space:nowrap}
+.user{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.user b{font-weight:700}
+#logout{border:1px solid rgba(255,255,255,.45);background:#fff;color:#14532d;border-radius:8px;padding:6px 11px;font-weight:700;cursor:pointer;font-size:12.5px}
+.nav{display:flex;gap:3px;overflow-x:auto;padding:6px 10px;position:sticky;top:52px;z-index:11;background:#fff;border-bottom:1px solid var(--line)}
+.nav button{border:0;background:none;padding:8px 14px;border-radius:9px;color:var(--muted);font:inherit;font-weight:650;cursor:pointer;white-space:nowrap}
+.nav button.on{background:#14532d;color:#fff;box-shadow:0 2px 8px rgba(21,128,61,.3)}
+.nav button:hover{color:#14532d;background:#e8f7ed}
+.screen{padding:14px 12px 70px;max-width:1200px;margin:0 auto;width:100%}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.stat .v{font-size:20px;font-weight:800;line-height:1.15;word-break:break-all}
+.stat .l{margin-top:2px;font-size:12px;font-weight:600;color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto;font-variant-numeric:tabular-nums}
+th{text-align:right;padding:9px 10px;font-size:12px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--line);background:#fbfdfe}
+th:first-child{text-align:left}
+td{padding:9px 10px;border-bottom:1px solid #f1f5f9;font-size:13.5px}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#f9fbfb}
+td.num,th.num{text-align:right}
+.pos{color:#15803d}.neg{color:#dc2626}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;background:#f1f5f9;color:#475569}
+.badge.VERIFIED{background:#e7f5e8;color:#15803d}.badge.REVERSED{background:#f1f5f9;color:#64748b}.badge.AMENDED{background:#fef3e2;color:#b45309}
+.badge.P{background:#e7f5e8;color:#15803d}.badge.H{background:#fffbeb;color:#a16207}.badge.A{background:#fee2e2;color:#b91c1c}
+.rowact{white-space:nowrap}.rowact .btn{margin:0 1.5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--ac);color:#fff;border-radius:9px;padding:8px 13px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(22,163,74,.18)}
+.btn:hover{background:#15803d}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--bd)}.btn.ghost:hover{background:#f8fafc}
+.btn.red{background:var(--red)}.btn.red:hover{background:#b91c1c}
+.btn.sm{padding:6px 10px;font-size:12.5px}
+.btn.big{width:100%;padding:11px 14px;font-size:15px}
+.input{width:100%;border:1px solid var(--bd);border-radius:8px;padding:9px 10px;font:inherit;background:#fff;color:var(--ink)}
+.input:focus{outline:2px solid #bfdbfe;outline-offset:1px}
+label{display:block;margin:9px 0 4px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.acts{display:flex;gap:8px;margin-top:16px}
+.toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.toolbar input{flex:1;min-width:170px;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font:inherit;background:#fff}
+.toolbar input:focus{outline:2px solid #bfdbfe;outline-offset:1px}
+.login-card{max-width:440px;margin:0 auto;padding:40px 20px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 4px 24px rgba(15,23,42,.07)}
+.login-card h1{text-align:center;margin:0 0 6px}
+.login-card .sub{text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:22px}
+.login-card label{text-align:left}
+.login-err{background:#fee2e2;color:var(--red);border-radius:9px;padding:8px 10px;margin-bottom:10px;font-weight:600;display:none}
+dialog{border:0;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 22px 50px rgba(15,23,42,.18),0 0 0 1px var(--line);width:min(560px,95vw);max-height:90vh;overflow:auto}
+dialog h2{margin-top:0}
+#toast{display:none;position:fixed;right:18px;bottom:18px;background:#0f172a;color:#fff;padding:11px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:30;max-width:320px}
+#toast.on{display:block}
+#toast.ok{background:#16a34a}
+@media(max-width:640px){.topbar{padding:9px 12px}.nav{top:49px}}
+</style>
+</head>
+<body>
+<header id="hdr" class="topbar"></header>
+<div id="nav" class="nav"></div>
+<main><div id="screen" class="screen"></div></main>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+<script>
+"use strict";
+
+/* ================= state ================= */
+let D={w:[],adv:[],ex:[],inc:[],mp:[],fa:[],cos:[],sh:[],nl:[],a:{},t:{},s:[],nx:0,ni:0,n:0,bud:{cat:{},mgr:[]}};
+let VER=0,ME=null,tab="dash",q="";
+const TY={g:"Advance given",r:"Returned",n:"Jama"};
+const ST={P:"Present",H:"Half day",A:"Absent"};
+
+/* ================= utils ================= */
+const $=(s)=>document.querySelector(s);
+const esc=(v)=>{const s=String(v==null?"":v);return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))};
+function num(v){const n=Math.round((+v||0)*100)/100;return n.toLocaleString("en-IN",{minimumFractionDigits:n%1?2:0})+"₹";}
+function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("ok");e.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove("on"),2600)}
+function say(m){toast(m)}
+function cn(c){const i=+String(c==null?"":c).trim();const e=D.cos[i-1];return e?e.m:""}
+function nextId(arr){let m=0;for(const x of arr||[])m=Math.max(m,+x.id||0);return m+1}
+function nextSeq(arr){let m=0;for(const x of arr||[])m=Math.max(m,+x.no||0);return m+1}
+function who(id){return (D.w||[]).find(x=>String(x.id)==String(id))||(D.s||[]).find(x=>String(x.id)==String(id))||{}}
+function fixD(){for(const k of ["w","adv","ex","inc","mp","fa","sh","nl","a","t","s","cos"])if(!D[k]||typeof D[k]!=="object")D[k]=[];if(!D.bud)D.bud={};if(!D.bud.cat)D.bud.cat={};if(!Array.isArray(D.bud.mgr))D.bud.mgr=[];}
+function setTk(t){t?localStorage.setItem("bm_tok",t):localStorage.removeItem("bm_tok")}
+function setTab(k){tab=k;q="";render();}
+
+/* ================= api ================= */
+async function api(m,p,b){
+  const h={"Accept":"application/json"};
+  if(m!=="GET")h["Content-Type"]="application/json";
+  if(localStorage.getItem("bm_tok"))h.Authorization="Bearer "+localStorage.getItem("bm_tok");
+  const r=await fetch(p,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
+  let j={};
+  try{j=await r.json()}catch(e){}
+  j._s=r.status;j.ok=r.ok;
+  return j;
+}
+const strip=d=>({...d,u:[]});
+
+/* ================= data ================= */
+async function loadData(){
+  const r=await api("GET","/data");
+  if(r.data){D=r.data;fixD();}
+  VER=r.ver||VER;
+  return r;
+}
+async function save(){
+  const r=await api("PUT","/data",{base:VER,data:strip(D)});
+  if(r.ok)VER=r.ver;
+  else if(r.conflict&&r.data){D=r.data;fixD();VER=r.ver;}
+  render();
+}
+
+/* ================= dialogs ================= */
+function dlg(html){const d=document.getElementById("dlg");d.innerHTML=html;d.showModal();return d}
+function closeDlg(){document.getElementById("dlg").close()}
+function companyOpts(cur){
+  const rows=(D.cos||[]).map((c,i)=>`<option value="${i+1}"${+String(cur).trim()==i+1?" selected":""}>${esc(c.m||"")}${c.x?" (hidden)":""}</option>`);
+  return `<option value="">—</option>${rows.join("")}`;
+}
+
+/* ================= header & nav ================= */
+function hdr(){
+  document.getElementById("hdr").innerHTML=`<span class="brand">JBB PANEL</span><span class="user"><b>${esc(ME&&ME.u?ME.u:"User")}</b>${ME&&ME.r?"· "+esc(ME.r):""}</span><button class="btn ghost sm" id="logout">Logout</button>`;
+  $("#logout").onclick=()=>{setTk("");location.reload();};
+}
+function nav(){
+  const items=[["dash","Dashboard"],["work","Workers"],["adv","Advances"],["ex","Expenses"],["inc","Income"],["sa","Settlements"],["att","Attendance"],["bud","Budgets"],["co","Companies"]];
+  document.getElementById("nav").innerHTML=items.map(([k,l])=>`<button class="${tab===k?"on":""}" onclick="setTab('${k}')">${esc(l)}</button>`).join("");
+}
+function render(){hdr();nav();switch(tab){case "dash":dash();break;case "work":workers();break;case "adv":advances();break;case "ex":expenses();break;case "inc":income();break;case "sa":settlements();break;case "att":attendance();break;case "bud":budgets();break;case "co":companies();break;}}
+
+/* ================= Dashboard ================= */
+function dash(){
+  const adv=D.adv||[],ex=D.ex||[],inc=D.inc||[],sh=D.sh||[];
+  const advT=adv.reduce((s,a)=>s+(+a.amt||0),0);
+  const expT=ex.reduce((s,a)=>s+(+a.amt||0),0);
+  const incT=inc.reduce((s,a)=>s+(+a.amt||0),0);
+  const present=(D.s||[]).filter(s=>D.a[today()+"|"+s.id]==="P").length,total=(D.s||[]).length;
+  document.getElementById("screen").innerHTML=`<h1>Overview</h1>
+  <section class="stats">
+    <div class="stat"><div class="v">${esc((D.w||[]).length)}</div><div class="l">Workers</div></div>
+    <div class="stat"><div class="v">${esc((D.w||[]).filter(w=>!w.wg).length)}</div><div class="l">Workers without wage</div></div>
+    <div class="stat"><div class="v">${esc(adv.length)}</div><div class="l">Advances</div></div>
+    <div class="stat"><div class="v">${num(advT)}</div><div class="l">Advance total</div></div>
+    <div class="stat"><div class="v">${num(expT)}</div><div class="l">Expenses</div></div>
+    <div class="stat"><div class="v">${num(incT)}</div><div class="l">Income</div></div>
+    <div class="stat"><div class="v">${esc(sh.length)}</div><div class="l">Settlements</div></div>
+    <div class="stat"><div class="v">${esc(present+"/"+total)}</div><div class="l">Attendance present</div></div>
+  </section>
+  <table><thead><tr><th>ID</th><th>Name</th><th>Type</th><th class="num">Amount</th><th>Note</th></tr></thead><tbody>
+    ${adv.slice().sort((a,b)=>String(b.d||"").localeCompare(String(a.d||""))).slice(0,10).map(a=>`<tr><td>${esc(a.id)}</td><td>${esc(who(a.w).n||a.w)}</td><td>${esc(TY[a.t]||a.t)}</td><td class="num">${num(a.amt)}</td><td>${esc(a.note||"")}</td></tr>`).join("")||'<tr><td colspan="5" class="mu">Advance data nahi hai.</td></tr>'}
+  </tbody></table>`;
+}
+
+/* ================= Workers ================= */
+function workers(){
+  const el=document.getElementById("screen");
+  const ws=(D.w||[]).filter(w=>!q||String(w.n||"").toLowerCase().includes(q.toLowerCase())||String(w.id).includes(q));
+  el.innerHTML=`<h1>Workers</h1><section class="toolbar"><input id="qw" value="${esc(q)}" placeholder="Name ya ID search karein..."></section>
+  <table><thead><tr><th class="num">ID</th><th>Name</th><th>Company</th><th class="num">Daily wage</th><th>Role</th><th>Mobile</th><th>Email</th><th></th></tr></thead><tbody>
+    ${ws.map(w=>`<tr><td class="num">${esc(w.id)}</td><td>${esc(w.n||"")}</td><td>${esc(cn(w.c))||"—"}</td><td class="num">${num(w.wg)}</td><td>${esc(w.r||"")}</td><td>${esc(w.ph||"")}</td><td>${esc(w.em||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editWorker(${w.id})">Edit</button><button class="btn sm red" onclick="delWorker(${w.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Worker data nahi hai.</td></tr>'}
+  </tbody></table><div class="mt"><button class="btn" id="addW">+ Add worker</button></div>`;
+  $("#qw").oninput=e=>{q=e.target.value;workers();};
+  $("#addW").onclick=addWorker;
+}
+function addWorker(){
+  const d=dlg(`<h2>Add worker</h2>
+  <label>Name</label><input id="a-name" class="input">
+  <label>Company</label><select id="a-company" class="input">${companyOpts("")}</select>
+  <label>Daily wage (₹)</label><input id="a-wage" class="input" type="number" step="0.01">
+  <label>Role</label><input id="a-role" class="input">
+  <label>Mobile</label><input id="a-ph" class="input">
+  <label>Email</label><input id="a-em" class="input">
+  <div class="acts"><button class="btn big" id="a-save">Add worker</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
+  $("#a-save").onclick=()=>{
+    const w={id:nextId(D.w),n:$("#a-name").value.trim(),c:$("#a-company").value,wg:+$("#a-wage").value||0,r:$("#a-role").value.trim(),ph:$("#a-ph").value.trim(),em:$("#a-em").value.trim()};
+    if(!w.n){say("Name likho");return}
+    D.w.push(w);d.close();save();
+  };
+}
+function editWorker(id){
+  const w=(D.w||[]).find(x=>String(x.id)==String(id));
+  if(!w)return;
+  const d=dlg(`<h2>Edit worker</h2>
+  <label>Name</label><input id="e-name" class="input" value="${esc(w.n)}">
+  <label>Company</label><select id="e-company" class="input">${companyOpts(w.c)}</select>
+  <label>Daily wage (₹)</label><input id="e-wage" class="input" type="number" step="0.01" value="${esc(w.wg)}">
+  <label>Role</label><input id="e-role" class="input" value="${esc(w.r)}">
+  <label>Mobile</label><input id="e-ph" class="input" value="${esc(w.ph)}">
+  <label>Email</label><input id="e-em" class="input" value="${esc(w.em)}">
+  <div class="acts"><button class="btn big" id="e-save">Save</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
+  $("#e-save").onclick=()=>{w.n=$("#e-name").value.trim();w.c=$("#e-company").value;w.wg=+$("#e-wage").value||0;w.r=$("#e-role").value.trim();w.ph=$("#e-ph").value.trim();w.em=$("#e-em").value.trim();d.close();save();};
+}
+function delWorker(id){
+  const w=(D.w||[]).find(x=>String(x.id)==String(id));
+  if(!w||!confirm("Worker '"+esc(w.n||w.id)+"' delete karein?"))return;
+  D.w.splice(D.w.indexOf(w),1);save();
+}
+
+/* ================= Advances ================= */
+function advances(){
+  const el=document.getElementById("screen");
+  const adv=(D.adv||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(who(a.w).n||"")+" "+TY[a.t]+" "+String(a.amt)).toLowerCase().includes(q.toLowerCase()));
+  el.innerHTML=`<h1>Advances</h1><section class="toolbar"><input id="qadv" value="${esc(q)}" placeholder="Worker, amount, note search karein..."></section>
+  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Worker</th><th>Company</th><th>Type</th><th class="num">Amount</th><th>Note</th><th></th></tr></thead><tbody>
+    ${adv.map(a=>`<tr><td class="num">${esc(a.id)}</td><td>${esc(a.d||"")}</td><td>${esc(who(a.w).n||a.w)}</td><td>${esc(cn(who(a.w).c))}</td><td>${esc(TY[a.t]||a.t)}</td><td class="num">${num(a.amt)}</td><td>${esc(a.note||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editAdv(${a.id})">Edit</button><button class="btn sm red" onclick="delAdv(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Advance data nahi hai.</td></tr>'}
+  </tbody></table><div class="mt"><button class="btn" id="addA">+ Add advance</button></div>`;
+  $("#qadv").oninput=e=>{q=e.target.value;advances();};
+  $("#addA").onclick=addAdv;
+}
+function advForm(title,a,onSave){
+  const d=dlg(`<h2>${title}</h2>
+  <label>Date</label><input id="ad-d" class="input" value="${esc(a?a.d:today())}">
+  <label>Worker</label><select id="ad-w" class="input">${(D.w||[]).map(w=>`<option value="${esc(w.id)}"${a&&String(w.id)==String(a.w)?" selected":""}>${esc(who(w.id).n||w.n||w.id)}</option>`).join("")||'<option>—</option>'}</select>
+  <label>Type</label><select id="ad-t" class="input">${["g","r","n"].map(k=>`<option value="${k}"${a&&a.t===k?" selected":""}>${esc(TY[k])}</option>`).join("")}</select>
+  <label>Amount (₹)</label><input id="ad-amt" class="input" type="number" step="0.01" value="${esc(a?a.amt:0)}">
+  <label>Note</label><input id="ad-note" class="input" value="${esc(a?a.note||"":"")}">
+  <div class="acts"><button class="btn big" id="ad-save">${title}</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
+  $("#ad-save").onclick=()=>onSave(d,{d:$("#ad-d").value||today(),w:+$("#ad-w").value,t:$("#ad-t").value,amt:+$("#ad-amt").value||0,note:$("#ad-note").value.trim()});
+}
+function addAdv(){advForm("Add advance",null,(d,o)=>{const a={id:nextId(D.adv),d:o.d,w:o.w,t:o.t,amt:o.amt,note:o.note};D.adv.push(a);d.close();save();});}
+function editAdv(id){const a=(D.adv||[]).find(x=>String(x.id)==String(id));if(!a)return;advForm("Edit advance",a,(d,o)=>{a.d=o.d;a.w=o.w;a.t=o.t;a.amt=o.amt;a.note=o.note;d.close();save();});}
+function delAdv(id){
+  const a=(D.adv||[]).find(x=>String(x.id)==String(id));
+  if(!a||!confirm("Advance '"+esc(a.id)+"' delete karein?"))return;
+  D.adv.splice(D.adv.indexOf(a),1);save();
+}
+
+/* ================= Expenses / Income ================= */
+function expenses(){
+  const el=document.getElementById("screen");
+  const ex=(D.ex||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(a.v)+" "+String(a.cat)+" "+String(a.no)).toLowerCase().includes(q.toLowerCase()));
+  el.innerHTML=`<h1>Expenses</h1><section class="toolbar"><input id="qex" value="${esc(q)}" placeholder="Vendor, category, date search karein..."></section>
+  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Vendor</th><th>Category</th><th>Company</th><th class="num">Amount</th><th>Detail / Invoice</th><th></th></tr></thead><tbody>
+    ${ex.map(a=>`<tr><td class="num">${esc(a.no||a.id||"")}</td><td>${esc(a.d||"")}</td><td>${esc(a.v||"")}</td><td>${esc(a.cat||"")}</td><td>${esc(cn(a.c)||"")}</td><td class="num"><span class="neg">${num(a.amt)}</span></td><td>${esc((a.ds||a.inv)||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editEx(${a.id})">Edit</button><button class="btn sm red" onclick="delEx(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Expense data nahi hai.</td></tr>'}
+  </tbody></table><div class="mt"><button class="btn" id="addX">+ Add expense</button></div>`;
+  $("#qex").oninput=e=>{q=e.target.value;expenses();};
+  $("#addX").onclick=()=>addExI("Add expense","ex",null);
+}
+function income(){
+  const el=document.getElementById("screen");
+  const inc=(D.inc||[]).filter(a=>!q||(String(a.id)+" "+String(a.d)+" "+String(a.v)+" "+String(a.cat)+" "+String(a.no)).toLowerCase().includes(q.toLowerCase()));
+  el.innerHTML=`<h1>Income</h1><section class="toolbar"><input id="qinc" value="${esc(q)}" placeholder="Vendor, category, date search karein..."></section>
+  <table><thead><tr><th class="num">ID</th><th>Date</th><th>Vendor</th><th>Category</th><th>Company</th><th class="num">Amount</th><th>Detail / Invoice</th><th></th></tr></thead><tbody>
+    ${inc.map(a=>`<tr><td class="num">${esc(a.no||a.id||"")}</td><td>${esc(a.d||"")}</td><td>${esc(a.v||"")}</td><td>${esc(a.cat||"")}</td><td>${esc(cn(a.c)||"")}</td><td class="num">${num(a.amt)}</td><td>${esc((a.ds||a.inv)||"")}</td><td class="rowact"><button class="btn sm ghost" onclick="editInc(${a.id})">Edit</button><button class="btn sm red" onclick="delInc(${a.id})">Delete</button></td></tr>`).join("")||'<tr><td colspan="8" class="mu">Income data nahi hai.</td></tr>'}
+  </tbody></table><div class="mt"><button class="btn" id="addI">+ Add income</button></div>`;
+  $("#qinc").oninput=e=>{q=e.target.value;income();};
+  $("#addI").onclick=()=>addExI("Add income","inc",null);
+}
+function addExI(title,col,a){
+  const d=dlg(`<h2>${title}</h2>
+  <label>Date</label><input id="ei-d" class="input" value="${esc(a?a.d:today())}">
+  <label>Vendor</label><input id="ei-v" class="input" value="${esc(a?a.v||"":"")}">
+  <label>Category</label><input id="ei-cat" class="input" value="${esc(a?a.cat||"":"")}">
+  <label>Company</label><select id="ei-c" class="input">${companyOpts(a?a.c:"")}</select>
+  <label>Amount (₹)</label><input id="ei-amt" class="input" type="number" step="0.01" value="${esc(a?a.amt:0)}">
+  <label>Detail / Invoice</label><input id="ei-ds" class="input" value="${esc(a?(a.ds||a.inv)||"":"")}">
+  <div class="acts"><button class="btn big" id="ei-save">${title}</button><button class="btn ghost" onclick="closeDlg()">Cancel</button></div>`);
+  $("#ei-save").onclick=()=>{
+    const o={d:$("#ei-d").value||today(),v:$("#ei-v").value.trim(),cat:$("#ei-cat").value.trim(),c:$("#ei-c").value,amt:+$("#ei-amt").value||0,ds:$("#ei-ds").value.trim()};
+    const row=(D[col]||[]).find(x=>String(x.id)==String(a?a.id:null));
+    if(row){Object.assign(row,o);}
+    else{D[col].push({id:nextId(D[col]),no:nextSeq(D[col]),...o});}
+    d.close();save();
+  };
+}
+function editEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit expense","ex",a);}
+function editInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit income","inc",a);}
+function delEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Expense '"+esc((a.v||a.id))+"' delete karein?"))return;D.ex.splice(D.ex.indexOf(a),1);save();}
+function delInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Income '"+esc((a.v||a.id))+"' delete karein?"))return;D.inc.splice(D.inc.indexOf(a),1);save();}
+
+/* ================= Settlements (Smart Auto NIL) ================= */
+function settlements(){
+  const el=document.getElementById("screen");
+  const hist=(D.sh||[]).slice().sort((a,b)=>String(b.createdAt||b.id||"").localeCompare(String(a.createdAt||a.id||"")));
+  const nilKeys=Object.keys(D.nl||{});
+  el.innerHTML=`<h1>Settlements (Smart Auto NIL)</h1>
+  <table><thead><tr><th>Worker</th><th>Period</th><th>Status</th><th class="num">Opening</th><th class="num">Advance</th><th class="num">Deductions</th><th class="num">Final balance</th><th>Settlement ID</th><th></th></tr></thead><tbody>
+    ${hist.map(h=>`<tr><td>${esc(h.workerName||who(h.workerId).n||h.workerId)}</td><td>${esc((h.start||"")+" – "+(h.end||h.through||""))}</td><td><span class="badge ${esc(h.status||"")}">${esc(h.status||"")}</span></td><td class="num">${num(h.openingBalance)}</td><td class="num">${num(h.totalAdvance)}</td><td class="num">${num(h.deductions)}</td><td class="num"><span class="${+(h.finalAmount||0)>=0?"pos":"neg"}">${num(h.finalAmount)}</span></td><td>${esc(h.id||"")}</td><td>${h.status==="VERIFIED"?'<button class="btn sm ghost" onclick="undo('+esc(JSON.stringify(h.id))+')">Undo</button>':"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="mu">Settlement data nahi hai.</td></tr>'}
+  </tbody></table>
+  ${nilKeys.length?'<h2 class="mt">NIL records ('+nilKeys.length+')</h2><table><thead><tr><th>Worker</th><th>Period</th><th class="num">Net</th><th class="num">Carry</th><th>From</th><th>At</th></tr></thead><tbody>'+nilKeys.map(k=>{const[id,d]=String(k).split("|");const rec=(D.nl||{})[k]||{};return `<tr><td>${esc(who(+id).n||id)}</td><td>${esc(d||"")}</td><td class="num">${num(rec.net)}</td><td class="num">${num(rec.carry)}</td><td>${esc(rec.from||"")}</td><td>${esc(rec.at||"")}</td></tr>`}).join("")+'</tbody></table>':""}`;
+}
+function undo(id){
+  const h=(D.sh||[]).find(x=>String(x.id)===String(id)&&x.status==="VERIFIED");
+  if(!h){say("Settlement is not active, or it was already reversed.");return}
+  const later=(D.sh||[]).some(x=>x.workerId===h.workerId&&x.status==="VERIFIED"&&x.end>h.end);
+  if(later){say("Undo later settlement(s) for this worker first.");return}
+  const key=h.workerId+"|"+h.end,active=D.nl?.[key];
+  if(active?.smartSettlementId!==h.id){say("Active NIL record no longer matches this history item; manual review required.");return}
+  confirmUndo(id);
+}
+function confirmUndo(id){
+  const h=(D.sh||[]).find(x=>String(x.id)===String(id)&&x.status==="VERIFIED");
+  if(!h){say("Settlement is not active.");return}
+  const key=h.workerId+"|"+h.end;
+  if(D.nl?.[key]?.smartSettlementId!==h.id){say("Active NIL changed; undo stopped.");return}
+  const later=(D.sh||[]).some(x=>x.workerId===h.workerId&&x.status==="VERIFIED"&&x.end>h.end);
+  if(later){say("Undo later settlement(s) first.");return}
+  if(h.priorNil)D.nl[key]=h.priorNil;else delete D.nl[key];
+  if(h.revisionOf){const prev=(D.sh||[]).find(x=>String(x.id)===String(h.revisionOf));if(prev&&prev.status==="AMENDED"){prev.status="VERIFIED";delete prev.amendedAt;}}
+  for(const [entryId,previous] of h.priorEntryStatus||[]){const a=D.adv.find(x=>String(x.id)===String(entryId));if(a){if(previous)a.settlementId=previous;else delete a.settlementId;}}
+  h.status="REVERSED";h.reversedAt=new Date().toISOString();
+  save();render();say("Settlement reversed; audit history kept.");
+}
+
+/* ================= Attendance ================= */
+function attendance(){
+  const rows=[];
+  for(const s of D.s||[])rows.push({id:s.id,n:s.n||who(s.id).n||s.id,g:s.g||""});
+  for(const w of D.w||[]){if(!rows.some(r=>String(r.id)==String(w.id)))rows.push({id:w.id,n:w.n||String(w.id),g:""});}
+  const el=document.getElementById("screen");
+  el.innerHTML=`<h1>Attendance</h1><p class="mu">Aaj: ${esc(today())} — Status select karein, save karne ke liye Change.</p>
+  <table><thead><tr><th>Person</th><th>Group</th><th>Date</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r=>{const key=today()+"|"+r.id,cur=D.a[key]||"";return `<tr><td>${esc(r.n)}</td><td>${esc(r.g||"")}</td><td>${esc(today())}</td><td><select class="at-sel" data-key="${esc(key)}">${["",...Object.keys(ST)].map(v=>`<option value="${esc(v)}"${cur===v?" selected":""}>${v?ST[v]:"—"}</option>`).join("")}</select></td></tr>`}).join("")||'<tr><td colspan="4" class="mu">Attendance data nahi hai.</td></tr>'}
+  </tbody></table>`;
+  el.querySelectorAll("select").forEach(sel=>{sel.onchange=()=>{const k=sel.dataset.key,v=sel.value;if(v)D.a[k]=v;else delete D.a[k];save();say("Save ho gaya.");};});
+}
+
+/* ================= Budgets ================= */
+function budgets(){
+  const el=document.getElementById("screen");
+  const rows=(D.cos||[]).map(c=>{const idx=(D.cos||[]).indexOf(c)+1;const ex=(D.ex||[]).filter(x=>+x.c==idx).reduce((s,x)=>s+(+x.amt||0),0);const inc=(D.inc||[]).filter(x=>+x.c==idx).reduce((s,x)=>s+(+x.amt||0),0);return [esc(c?c.m:""),num(+(D.bud?.mgr?.[idx]||0)),num(ex),num(inc),num(inc-ex)];});
+  const cats=Object.entries(D.bud?.cat||{});
+  el.innerHTML=`<h1>Budgets</h1><table><thead><tr><th>Manager</th><th class="num">Budget</th><th class="num">Expense total</th><th class="num">Income total</th><th class="num">Net ( Income − Expense )</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]}</td></tr>`).join("")||'<tr><td colspan="5" class="mu">Companies nahi hai.</td></tr>'}
+  </tbody></table>
+  ${cats.length?'<h2 class="mt">Category budgets</h2><table><thead><tr><th>Category</th><th class="num">Budget</th></tr></thead><tbody>'+cats.map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${num(v)}</td></tr>`).join("")+'</tbody></table>':""}`;
+}
+
+/* ================= Companies ================= */
+function companies(){
+  const el=document.getElementById("screen");
+  el.innerHTML=`<h1>Companies</h1><table><thead><tr><th>#</th><th>Manager</th><th>Hidden</th></tr></thead><tbody>
+    ${(D.cos||[]).map((c,i)=>`<tr><td>${i+1}</td><td>${esc(c.m||"")}${c.x?"<span class=\"mu\"> (hidden)</span>":""}</td><td>${esc(c.x?"Yes":"No")}</td></tr>`).join("")||'<tr><td colspan="3" class="mu">Companies nahi hai.</td></tr>'}
+  </tbody></table>`;
+}
+
+/* ================= Login ================= */
+function showLogin(){
+  document.getElementById("hdr").innerHTML="";
+  document.getElementById("nav").innerHTML="";
+  document.getElementById("screen").innerHTML=`<div class="login-card">
+    <h1>JBB PANEL</h1>
+    <p class="sub">Koi bhi Gmail ya Mobile number aur password se login karein.</p>
+    <div id="l-err" class="login-err" hidden></div>
+    <label>Gmail / Mobile number</label><input id="l-id" class="input">
+    <label>Password</label><input id="l-pw" class="input" type="password">
+    <div class="acts"><button class="btn big" id="l-btn">Sign in</button></div>
+    <p class="sub mt" style="font-size:12px"><a href="#">Admin access ki request bhejo</a></p>
+  </div>`;
+  $("#l-btn").onclick=()=>login();
+}
+function showErr(m){const e=$("#l-err");e.hidden=false;e.textContent=m;}
+async function login(){
+  const id=$("#l-id").value.trim(),pw=$("#l-pw").value;
+  if(!id||!pw){showErr("Gmail/number aur password likho");return}
+  const b=$("#l-btn");b.disabled=true;b.textContent="Signing in…";
+  const r=await api("POST","/auth/login",{id,password:pw});
+  b.disabled=false;b.textContent="Sign in";
+  if(!r.token){showErr(r.error||"Login nahi hua");return}
+  let rr=r;
+  if(r.status==="active"){const l=await api("POST","/auth/login",{id,password:pw});if(l.token)rr=l;}
+  if(!rr.token){showErr(rr.error||"Login nahi hua");return}
+  setTk(rr.token);
+  ME={id:rr.user?rr.user.id:null,u:rr.user?rr.user.name:"",r:rr.user?rr.user.role:""};
+  const lr=await loadData();
+  if(lr._s===401){setTk("");ME=null;showLogin();return}
+  render();
+}
+function authFail(){setTk("");ME=null;showLogin();}
+async function start(){
+  const r=await loadData();
+  if(r._s===401){authFail();return}
+  if(r.error)say("Server se data nahi mila: "+r.error);
+  render();
+}
+if(typeof confirm==="undefined")window.confirm=()=>true;
+document.addEventListener("DOMContentLoaded",()=>{if(localStorage.getItem("bm_tok"))start();else showLogin();});
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5ddd4f8ec8e47cd',t:'MTc5NTI0NDU3OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5ddd4f8ec8e47cd',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

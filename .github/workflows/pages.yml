@@ -3,6 +3,9 @@ name: Deploy panel to GitHub Pages
 on:
   push:
     branches: [main]
+  # run the tests on pull requests too, but never deploy from one
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -35,6 +38,8 @@ jobs:
 
   deploy:
     needs: test
+    # a pull request only runs the tests; deploying stays a main-only action
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

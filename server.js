@@ -169,7 +169,18 @@ function persistFile() {
   }
 }
 
-/* ---------------- postgres backend ---------------- */
+/* ---------------- postgres backend ----------------
+ * Tuned for free managed Postgres (Neon, Supabase, Aiven):
+ *  - free tiers suspend compute when idle, so every connection attempt is
+ *    retried with backoff instead of failing the boot
+ *  - the first query after a suspend pays a wake-up cost, so query timeouts
+ *    are generous
+ *  - any DB failure degrades to file storage rather than taking the app down,
+ *    and a "degraded" flag is exposed on /api/health so it is visible
+ * ------------------------------------------------------------------ */
+let dbDegraded = false;
+let dbLastError = null;
+
 function pgClient() {
   if (!pgReady) {
     console.error(
@@ -184,10 +195,22 @@ function pgClient() {
 function pgInit() {
   try {
     const { Pool } = require("pg");
+    const needsSsl = !/localhost|127\.0\.0\.1|sslmode=disable/.test(PG_URL);
     pool = new Pool({
       connectionString: PG_URL,
-      ssl: /localhost|127\.0\.0\.1/.test(PG_URL) ? false : { rejectUnauthorized: false },
-      max: Number(process.env.PG_POOL_MAX || 5)
+      ssl: needsSsl ? { rejectUnauthorized: false } : false,
+      max: Number(process.env.PG_POOL_MAX || 3),
+      // free tiers can take seconds to wake from suspend
+      connectionTimeoutMillis: Number(process.env.PG_CONNECT_TIMEOUT_MS || 15000),
+      idleTimeoutMillis: 30000,
+      query_timeout: Number(process.env.PG_QUERY_TIMEOUT_MS || 20000),
+      keepAlive: true
+    });
+    // never let a background socket error crash the process
+    pool.on("error", (e) => {
+      dbDegraded = true;
+      dbLastError = e.message;
+      console.error("[store] postgres pool error:", e.message);
     });
     pgReady = true;
     return true;
@@ -197,43 +220,91 @@ function pgInit() {
   }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function withPgRetry(label, fn, attempts) {
+  const tries = attempts || Number(process.env.PG_RETRIES || 4);
+  let lastErr;
+  for (let i = 1; i <= tries; i++) {
+    try {
+      const out = await fn();
+      dbDegraded = false;
+      return out;
+    } catch (e) {
+      lastErr = e;
+      dbLastError = e.message;
+      const transient =
+        /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|terminating connection|Connection terminated|timeout|starting up|too many clients/i.test(
+          e.message
+        );
+      if (i === tries || !transient) break;
+      const wait = Math.min(1000 * 2 ** (i - 1), 8000);
+      console.error("[store] " + label + " failed (" + e.message + "), retry " + i + "/" + (tries - 1) + " in " + wait + "ms");
+      await sleep(wait);
+    }
+  }
+  dbDegraded = true;
+  throw lastErr;
+}
+
 async function loadStorePg() {
   if (!pgInit()) {
     console.error("[store] falling back to file storage");
     return loadStoreFile();
   }
-  const c = pgClient();
-  await c.query(
-    `CREATE TABLE IF NOT EXISTS ${PG_TABLE} (
-       id         integer PRIMARY KEY DEFAULT 1,
-       doc        jsonb   NOT NULL,
-       updated_at timestamptz NOT NULL DEFAULT now(),
-       CONSTRAINT ${PG_TABLE}_single_row CHECK (id = 1)
-     )`
-  );
-  const r = await c.query(`SELECT doc FROM ${PG_TABLE} WHERE id = 1`);
-  if (!r.rows.length) {
-    store = freshStore();
-    await c.query(`INSERT INTO ${PG_TABLE} (id, doc) VALUES (1, $1)`, [JSON.stringify(store)]);
-    console.log("[store] postgres: seeded a new document");
+  try {
+    await withPgRetry("connect", async () => {
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS ${PG_TABLE} (
+           id         integer PRIMARY KEY DEFAULT 1,
+           doc        jsonb   NOT NULL,
+           updated_at timestamptz NOT NULL DEFAULT now(),
+           CONSTRAINT ${PG_TABLE}_single_row CHECK (id = 1)
+         )`
+      );
+    });
+
+    const r = await withPgRetry("load", () => pool.query(`SELECT doc FROM ${PG_TABLE} WHERE id = 1`));
+
+    if (!r.rows.length) {
+      store = freshStore();
+      await withPgRetry("seed", () =>
+        pool.query(`INSERT INTO ${PG_TABLE} (id, doc) VALUES (1, $1)`, [JSON.stringify(store)])
+      );
+      console.log("[store] postgres: seeded a new document");
+      return store;
+    }
+    store = normalise(r.rows[0].doc);
+    dbDegraded = false;
+    console.log(
+      "[store] postgres: loaded (ver " + store.ver + ", users " + Object.keys(store.users).length + ")"
+    );
     return store;
+  } catch (e) {
+    console.error("[store] postgres unavailable after retries:", e.message);
+    console.error("[store] serving from file storage; existing DB rows are untouched");
+    return loadStoreFile();
   }
-  store = normalise(r.rows[0].doc);
-  console.log("[store] postgres: loaded (ver " + store.ver + ", users " + Object.keys(store.users).length + ")");
-  return store;
 }
 
 async function persistPg() {
   const c = pgClient();
   if (!c) return;
   try {
-    await c.query(
-      `INSERT INTO ${PG_TABLE} (id, doc, updated_at) VALUES (1, $1, now())
-       ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`,
-      [JSON.stringify(store)]
+    await withPgRetry(
+      "persist",
+      () =>
+        c.query(
+          `INSERT INTO ${PG_TABLE} (id, doc, updated_at) VALUES (1, $1, now())
+           ON CONFLICT (id) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()`,
+          [JSON.stringify(store)]
+        ),
+      Math.min(Number(process.env.PG_RETRIES || 4), 3)
     );
   } catch (e) {
-    console.error("[store] postgres persist failed:", e.message);
+    // last resort: keep the write on local disk so it is not lost
+    console.error("[store] postgres persist failed, writing to disk as a safety net:", e.message);
+    persistFile();
   }
 }
 
@@ -498,7 +569,15 @@ async function router(req, res) {
   }
 
   if (p === "/api/health" && m === "GET") {
-    return send(res, 200, { ok: true, ver: store.ver, uptime: Math.round(process.uptime()), users: Object.keys(store.users).length });
+    return send(res, 200, {
+      ok: true,
+      ver: store.ver,
+      uptime: Math.round(process.uptime()),
+      users: Object.keys(store.users).length,
+      store: STORE_MODE,
+      degraded: STORE_MODE === "postgres" ? dbDegraded : false,
+      lastStoreError: dbDegraded ? dbLastError : null
+    });
   }
   if (p === "/auth/login" && m === "POST") return handleLogin(req, res);
   if (p === "/auth/logout" && m === "POST") return send(res, 200, { ok: true });

@@ -1,14 +1,21 @@
-# Render Blueprint — one-click Cloud deploy
+# Render Blueprint — one-click web server
 #
-# Deploys the JBB PANEL Node server plus a managed Postgres database, so data
-# survives restarts and redeploys (Render's disk is ephemeral on free plans).
+# IMPORTANT: this blueprint deliberately does NOT create a Render Postgres.
+# Render's free database is DELETED 30 days after creation (plus a 14-day grace
+# period), so it is not a permanent free option. Data would be destroyed.
+#
+# Instead this deploy the server only, and you paste a connection string from a
+# genuinely free, non-expiring Postgres (Neon). See FREE-DATABASE.md.
 #
 # How to use:
-#   1. Go to https://render.com/deploy?repo=https://github.com/akash4447777-dev/jbb-panel-new
-#   2. Sign in with GitHub, approve the repo
-#   3. Click "Apply" — Render creates the service and the database
+#   1. Create the free DB first:  FREE-DATABASE.md  (~2 min, no card)
+#   2. Go to https://render.com/deploy?repo=https://github.com/akash4447777-dev/jbb-panel-new
+#   3. Sign in with GitHub, click Apply
+#   4. When prompted, paste DATABASE_URL = your Neon connection string
 #
-# STORE_MODE=DATABASE_URL is wired automatically by `fromDatabase` below.
+# Without DATABASE_URL the server still runs, using file storage. On Render's
+# ephemeral disk that data is lost on every redeploy — fine for a demo, not for
+# real records.
 
 services:
   - type: web
@@ -17,7 +24,7 @@ services:
     plan: free
     region: oregon
     branch: main
-    buildCommand: npm ci --omit=dev || npm install --omit=dev
+    buildCommand: npm install --omit=dev
     startCommand: node server.js
     healthCheckPath: /api/health
     autoDeploy: true
@@ -26,17 +33,10 @@ services:
         value: "20"
       - key: STORE_MODE
         value: postgres
+      # Paste your Neon / Supabase / Aiven connection string here in the Render
+      # dashboard. Must include ?sslmode=require for Neon.
       - key: DATABASE_URL
-        fromDatabase:
-          name: jbb-panel-db
-          property: connectionString
-      # Signs login tokens. Render generates a fresh strong value.
+        sync: false
+      # Signs login tokens. Set explicitly so tokens survive redeploys.
       - key: JBB_SECRET
         generateValue: true
-
-databases:
-  - name: jbb-panel-db
-    databaseName: jbb_panel
-    user: jbb
-    plan: free
-    region: oregon

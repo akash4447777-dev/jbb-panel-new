@@ -314,8 +314,11 @@ function budL() {
   ${hd("Category budget — " + fy)}${D.m.cat.map((c, i) => one(c, +D.bud.cat[c] || 0, R2(sum(X.filter(x => x.cat === c), net)), 0, i)).join("")}
   ${D.cos.length ? hd("Manager budget — " + fy) + D.cos.map((c, i) => one(c.m, +D.bud.mgr[i + 1] || 0, R2(sum(X.filter(x => String(x.c) === String(i + 1)), net)), 1, i)).join("") : ""}`;
 }
-function setB(k, i, v) {
-  if (k) D.bud.mgr[String(i + 1)] = +v || 0; else D.bud.cat[D.m.cat[i]] = +v || 0;
+/* isMgr = 1 for a manager budget, 0 for a category budget; index is 0-based */
+function setB(isMgr, index, value) {
+  const amt = +value || 0;
+  if (+isMgr) D.bud.mgr[String(index + 1)] = amt;
+  else D.bud.cat[D.m.cat[index]] = amt;
   commit(); upd();
 }
 

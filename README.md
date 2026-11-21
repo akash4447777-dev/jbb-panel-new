@@ -19,6 +19,19 @@ This static deployment runs in **Offline mode**: data is stored in your browser'
 all CRUD operations, settlements and attendance work. Use **Settings** in the top-right
 to switch between Offline and Cloud storage.
 
+## Free database (₹0, never expires)
+
+**[FREE-DATABASE.md](FREE-DATABASE.md)** — step-by-step guide in Hindi/Hinglish.
+
+Short version: **Neon** gives 1 GB Postgres, no credit card, no expiry, and its limits
+never delete your data. Render's own free database is **deleted after 30 days** — this
+repo deliberately does not use it.
+
+1. Create a free DB at **https://neon.com** (~2 min) → copy the connection string
+2. Deploy: **https://render.com/deploy?repo=https://github.com/akash4447777-dev/jbb-panel-new**
+3. Paste the string as `DATABASE_URL` when prompted
+4. Open `https://YOUR-APP.onrender.com/api/health` → expect `"store":"postgres", "degraded":false`
+
 ## Syncing across devices (Cloud mode)
 
 The Pages link keeps data **per device** (browser `localStorage`). To share one dataset

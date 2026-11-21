@@ -4,6 +4,30 @@ Labour & advance management panel — workers, advances, expenses, income, settl
 attendance and budgets. Single-page frontend (`index.html`) + a zero-dependency Node.js
 backend (`server.js`).
 
+## Live panel
+
+**Public link (works on any phone, no setup):** see the GitHub Pages URL under
+*Settings → Pages* of this repo — `https://akash4447777-dev.github.io/jbb-panel-new/`
+
+This static deployment runs in **Offline mode**: data is stored in your browser's
+`localStorage`, so there is no server to run and no login round-trip. All nine screens,
+all CRUD operations, settlements and attendance work. Use **Settings** in the top-right
+to switch between Offline and Cloud storage.
+
+## Two ways to run
+
+| | Offline (GitHub Pages) | Cloud (this repo's Node server) |
+| --- | --- | --- |
+| Runs on | any static host / phone | Node 18+ |
+| Data lives | browser `localStorage` | `data/store.json` on the server |
+| Shared between devices | no | yes |
+| Password | screen-lock only* | salted SHA-256 |
+| Setup | none | `npm start` |
+
+\* Offline mode has no server to verify against, so the password is only a device
+screen-lock and the data sits on the device in plain text. For a shared or sensitive
+deployment use Cloud mode.
+
 ## Quick start
 
 ```bash

@@ -14,8 +14,11 @@ function advTop() {
 
 function advList() {
   const W = {}; D.w.forEach(w => { W[w.id] = w.c; });
+  /* the first panel showed every entry; limiting to one month hides history and
+     reads as "my data is gone". Show the fiscal year, and let the period filter
+     narrow further. */
   const l = D.adv
-    .filter(a => a.d && a.d.startsWith(gm) && (co === "0" || String(W[a.w]) === String(co)))
+    .filter(a => a.d && inP(a.d) && (co === "0" || String(W[a.w]) === String(co)))
     .filter(a => qmatch(wname(a.w) + " " + a.amt + " " + (a.note || "")))
     .sort((x, y) => String(y.d).localeCompare(String(x.d)) || y.id - x.id);
   const given = R2(sum(l.filter(a => a.t === "g"), "amt"));

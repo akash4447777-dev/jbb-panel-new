@@ -151,6 +151,81 @@ const ck = (n, c, ex) => { if (c) { pass++; console.log("  ok   " + n); } else {
   await R("loadData()");
   R('fy=fyOf(today());mn="All";co="0";br="0"');
 
+  /* ---------- adopting the FIRST panel's dataset (jbb_local_db) ---------- */
+  console.log("\n-- adopting the first panel's data --");
+  const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  const firstPanel = {
+    ver: 7,
+    createdAt: "2025-06-01T00:00:00Z",
+    users: { "ramesh@jbb.com": { id: "ramesh@jbb.com", name: "ramesh", role: "super", status: "active", pw: "h1abc.12" } },
+    data: {
+      w: [
+        { id: 1, n: "Ramesh Kumar", c: "1", wg: 550, r: "Mason", ph: "9810012345", em: "ramesh@example.com" },
+        { id: 2, n: "Suresh Yadav", c: "1", wg: 500, r: "Helper", ph: "9810012346", em: "" }
+      ],
+      adv: [{ id: 1, d: daysAgo(9), w: 1, t: "g", amt: 5000, note: "Ghar ke liye" },
+            { id: 2, d: daysAgo(3), w: 1, t: "r", amt: 2000, note: "Wapas kiya" }],
+      /* the crucial bit: old rows use `v` for the vendor, which collides with
+         this panel's `v` = GST rate */
+      ex: [{ id: 1, no: 1, d: daysAgo(10), v: "Sharma Cement Store", cat: "Material", c: "1", amt: 48500, ds: "INV-2201" }],
+      inc: [{ id: 1, no: 1, d: daysAgo(8), v: "Mehra Builders", cat: "Contract", c: "1", amt: 150000, ds: "RC-551" }],
+      mp: [], fa: [], sh: [], nl: {},
+      a: { "2026-11-20|1": "P", "2026-11-20|2": "H", "2026-11-19|1": "A" },
+      t: [], s: [],
+      cos: [{ m: "JBB Constructions", x: false }, { m: "JBB Infra", x: false }],
+      bud: { cat: { Material: 200000, Transport: 50000 }, mgr: [250000, 150000] }
+    }
+  };
+  R("localStorage.removeItem('jbb_db_v3');localStorage.removeItem('bm_tok')");
+  R("localStorage.setItem('jbb_local_db'," + JSON.stringify(JSON.stringify(firstPanel)) + ")");
+  R("localStorage.setItem('jbb_prefs'," + JSON.stringify(JSON.stringify({ mode: "local" })) + ")");
+
+  /* a returning user opens the panel with no session: the panel must adopt the
+     old store, then their saved token resolves against it */
+  R("localDbInit()");                                  /* what boot() does first */
+  const oldTok = R("(function(){const db=dbLoadLocal();const k=Object.keys(db.users)[0];return 'local:'+k})()");
+  R("localStorage.setItem('bm_tok'," + JSON.stringify(oldTok) + ")");
+  const adopted = await R("loadData()");
+  ck("the old dataset is picked up automatically", adopted._s === 200 && adopted.ver === 7, adopted._s + "/" + adopted.ver);
+  const A = adopted.data;
+  ck("workers carried over", A.w.length === 2 && A.w[0].n === "Ramesh Kumar");
+  ck("worker mobile and email are not dropped", A.w[0].ph === "9810012345" && A.w[0].em === "ramesh@example.com");
+  ck("expense vendor survives the v collision", A.ex[0].v === "Sharma Cement Store" && A.ex[0].vendor === "Sharma Cement Store", JSON.stringify(A.ex[0]).slice(0, 80));
+  ck("expense GST is a rate, not the vendor name", A.ex[0].g === 0);
+  ck("expense gets payment defaults", A.ex[0].st === "Paid" && A.ex[0].ap === "Approved");
+  ck("invoice is lifted out of the detail field", A.ex[0].inv === "INV-2201", A.ex[0].inv);
+  ck("income payer becomes party", A.inc[0].party === "Mehra Builders", A.inc[0].party);
+  ck("income gets a source and status", !!A.inc[0].src && A.inc[0].st === "Received");
+  ck("free-text categories join the master list", ["Material", "Contract"].every(c => A.m.cat.includes(c)), A.m.cat.slice(-3).join(","));
+  ck("manager budgets keep their amounts", A.bud.mgr["1"] === 250000 && A.bud.mgr["2"] === 150000, JSON.stringify(A.bud.mgr));
+  ck("category budgets carried over", A.bud.cat.Material === 200000);
+  ck("manager flags survive", A.cos.length === 2 && A.cos[0].x === 0);
+  ck("attendance is preserved verbatim", A.a["2026-11-20|1"] === "P" && A.a["2026-11-19|1"] === "A");
+  ck("advance balance still computes", R('bal(1,"9999-12-31")') === 3000, R('bal(1,"9999-12-31")'));
+  ck("the old key is left untouched", R("!!localStorage.getItem('jbb_local_db')") === true);
+
+  /* the migrated rows must actually be visible in the UI */
+  R("ME={id:'ramesh@jbb.com',name:'ramesh',role:'super'}");
+  R('fy=fyOf(today());mn="All";co="0";br="0";gm=today().slice(0,7)');
+  ck("workers screen shows the old worker", (() => { try { R('tab="work";render()'); return /Ramesh Kumar/.test(els.get("screen").innerHTML); } catch (e) { return e.message; } })() === true);
+  ck("workers screen shows their contact details", /9810012345/.test(els.get("screen").innerHTML || ""));
+  ck("expenses screen shows the old vendor", (() => { try { R('tab="ex";render()'); return /Sharma Cement Store/.test(els.get("screen").innerHTML); } catch (e) { return e.message; } })() === true);
+  ck("income screen shows the old payer", (() => { try { R('tab="inc";render()'); return /Mehra Builders/.test(els.get("screen").innerHTML); } catch (e) { return e.message; } })() === true);
+  ck("advances list shows the old advance", (() => { try { R('tab="adv";av="l";render()'); return /Ghar ke liye/.test(els.get("screen").innerHTML); } catch (e) { return e.message; } })() === true);
+
+  /* running the adoption twice must not duplicate or corrupt anything */
+  R("migrateFrom(dbLoadLocal());dbSaveLocal(dbLoadLocal())");
+  const again = await R("loadData()");
+  ck("re-running the upgrade is idempotent", again.data.w.length === 2 && again.data.ex.length === 1 && again.data.ex[0].v === "Sharma Cement Store");
+
+  /* back to a clean seeded install */
+  R("localStorage.removeItem('jbb_db_v3');localStorage.removeItem('jbb_local_db');localStorage.removeItem('bm_tok');D=migrate();localDbInit()");
+  const reseed1 = await R('localApi("POST","/auth/login",{id:"owner@jbb.com",password:"jbb12345"})');
+  R('localStorage.setItem("bm_tok",' + JSON.stringify(reseed1.token) + ')');
+  R('ME={id:"owner@jbb.com",name:"owner",role:"super"}');
+  await R("loadData()");
+  R('fy=fyOf(today());mn="All";co="0";br="0";gm=today().slice(0,7);av="s"');
+
   console.log("\n-- money maths --");
   ck("GST 18% on 1000 = 180", R('gs({amt:1000,g:0.18})') === 180, R('gs({amt:1000,g:0.18})'));
   ck("gross = 1180", R('tot({amt:1000,g:0.18})') === 1180);

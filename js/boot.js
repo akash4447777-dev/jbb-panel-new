@@ -71,7 +71,8 @@ function edit(col, F, def, id, required) {
 }
 
 /* ---------------- field definitions ---------------- */
-const FW = [["n", "Name", "text"], ["c", "Manager", "sel", () => copts()], ["wg", "Daily wage (₹)", "number"], ["r", "Role", "text"]];
+const FW = [["n", "Name", "text"], ["c", "Manager", "sel", () => copts()], ["wg", "Daily wage (₹)", "number"],
+  ["r", "Role", "text"], ["ph", "Mobile", "text"], ["em", "Email", "text"]];
 const FA = [["w", "Worker", "sel", () => D.w.map(w => [w.id, w.n])], ["d", "Date", "date"],
   ["t", "Type", "sel", () => [["g", "Advance given"], ["r", "Returned / deducted"], ["n", "Jama / Nill (not counted)"]]],
   ["amt", "Amount (₹)", "number"], ["note", "Note", "text"]];
@@ -261,6 +262,21 @@ function settings() {
   <label>GST rates % (comma separated)</label><input id="mg" value="${D.m.gst.map(x => Math.round(x * 100)).join(", ")}">
   <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px"><input type="checkbox" id="pw" style="width:auto;margin-top:3px" ${D.opt.pw ? "checked" : ""}>
     <span>Profit me attendance payroll bhi ghatao (sirf tab jab wages Salary expense me na daali ho)</span></label>
+  <h2 class="mt">Storage</h2>
+  <label>Data kahan rakhein</label>
+  <div class="bar">
+    <button class="btn ${MODE === "local" ? "" : "g"}" onclick="setMode('local')" style="flex:1">📱 Isi device me (Offline)</button>
+    <button class="btn ${MODE === "cloud" ? "" : "g"}" onclick="setMode('cloud')" style="flex:1">☁ Server (Cloud)</button>
+  </div>
+  <small>${MODE === "local"
+    ? "Offline: data sirf isi browser me hai. Doosre phone/laptop ke saath share nahi hota — backup lekar rakhein."
+    : "Cloud: data server par hai, sab device par same dikhta hai. Server band ho to panel nahi chalega."}</small>
+  <label>Cloud server address</label>
+  <div style="display:flex;gap:6px">
+    <input id="cb" value="${esc(cloudBase())}" placeholder="https://your-app.onrender.com">
+    <button class="btn" id="cbs">Set</button>
+  </div>
+  <small>Panel isi server se baat karega. Khali chhodo to wahi server jahan panel khud chal raha hai.</small>
   ${ta("bk", "Backup — ye text copy karein. Restore ke liye paste karke Restore dabayein.", JSON.stringify(D), 3)}
   <div class="acts"><button class="btn g" id="rs">Restore</button>
     <button class="btn g" id="exp">Export backup</button>
@@ -300,6 +316,11 @@ function settings() {
       const users = D.u; D = x; migrate(); D.u = users;
       save().then(() => { closeDlg(); toast("Restore ho gaya"); render(); });
     });
+  };
+  $("#cbs").onclick = () => {
+    const v = ($("#cb").value || "").trim().replace(/\/+$/, "");
+    setPrefs({ cloudBase: v });
+    toast(v ? "Server set ho gaya" : "Server hata diya");
   };
   $("#exp").onclick = () => {
     const blob = new Blob([JSON.stringify(D, null, 2)], { type: "application/json" });

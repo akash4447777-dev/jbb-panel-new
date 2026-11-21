@@ -59,12 +59,14 @@ label{display:block;margin:9px 0 4px;font-size:12.5px;font-weight:700;color:var(
 .login-card .sub{text-align:center;color:var(--muted);font-size:12.5px;margin-bottom:22px}
 .login-card label{text-align:left}
 .login-err{background:#fee2e2;color:var(--red);border-radius:9px;padding:8px 10px;margin-bottom:10px;font-weight:600;display:none}
+.login-err.on{display:block}
 dialog{border:0;background:var(--card);border-radius:16px;padding:20px;box-shadow:0 22px 50px rgba(15,23,42,.18),0 0 0 1px var(--line);width:min(560px,95vw);max-height:90vh;overflow:auto}
 dialog h2{margin-top:0}
 #toast{display:none;position:fixed;right:18px;bottom:18px;background:#0f172a;color:#fff;padding:11px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:30;max-width:320px}
 #toast.on{display:block}
 #toast.ok{background:#16a34a}
 @media(max-width:640px){.topbar{padding:9px 12px}.nav{top:49px}}
+@media(max-width:760px){.screen table{display:block;overflow-x:auto;white-space:nowrap}}
 </style>
 </head>
 <body>
@@ -85,7 +87,9 @@ const ST={P:"Present",H:"Half day",A:"Absent"};
 /* ================= utils ================= */
 const $=(s)=>document.querySelector(s);
 const esc=(v)=>{const s=String(v==null?"":v);return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))};
-function num(v){const n=Math.round((+v||0)*100)/100;return n.toLocaleString("en-IN",{minimumFractionDigits:n%1?2:0})+"₹";}
+/* quote a value for use inside an HTML on*="" attribute */
+const jsq=(v)=>esc("'"+String(v==null?"":v).replace(/\\/g,"\\\\").replace(/'/g,"\\'")+"'");
+function num(v){const n=Math.round((+v||0)*100)/100;return "₹"+n.toLocaleString("en-IN",{minimumFractionDigits:n%1?2:0});}
 function today(){const d=new Date();return new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("ok");e.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove("on"),2600)}
 function say(m){toast(m)}
@@ -102,10 +106,16 @@ async function api(m,p,b){
   const h={"Accept":"application/json"};
   if(m!=="GET")h["Content-Type"]="application/json";
   if(localStorage.getItem("bm_tok"))h.Authorization="Bearer "+localStorage.getItem("bm_tok");
-  const r=await fetch(p,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
+  let r;
+  try{
+    r=await fetch(p,{method:m,headers:h,body:m==="GET"?undefined:JSON.stringify(b),cache:"no-store"});
+  }catch(e){
+    return {_s:0,ok:false,error:"Server se connection nahi bana"};
+  }
   let j={};
   try{j=await r.json()}catch(e){}
   j._s=r.status;j.ok=r.ok;
+  if(r.status===401&&p!=="/auth/login"&&ME){ME=null;setTk("");if(typeof authFail==="function")authFail();}
   return j;
 }
 const strip=d=>({...d,u:[]});
@@ -114,13 +124,15 @@ const strip=d=>({...d,u:[]});
 async function loadData(){
   const r=await api("GET","/data");
   if(r.data){D=r.data;fixD();}
+  if(r.me){ME={id:r.me.id,u:r.me.name,r:r.me.role};}
   VER=r.ver||VER;
   return r;
 }
 async function save(){
   const r=await api("PUT","/data",{base:VER,data:strip(D)});
-  if(r.ok)VER=r.ver;
-  else if(r.conflict&&r.data){D=r.data;fixD();VER=r.ver;}
+  if(r.ok){VER=r.ver;}
+  else if(r.conflict&&r.data){D=r.data;fixD();VER=r.ver;say("Data refresh hua — dobara try karein.");}
+  else if(r._s!==401){say("Save nahi hua: "+(r.error||"unknown error"));}
   render();
 }
 
@@ -207,7 +219,7 @@ function editWorker(id){
 }
 function delWorker(id){
   const w=(D.w||[]).find(x=>String(x.id)==String(id));
-  if(!w||!confirm("Worker '"+esc(w.n||w.id)+"' delete karein?"))return;
+  if(!w||!confirm("Worker '"+String(w.n||w.id)+"' delete karein?"))return;
   D.w.splice(D.w.indexOf(w),1);save();
 }
 
@@ -236,7 +248,7 @@ function addAdv(){advForm("Add advance",null,(d,o)=>{const a={id:nextId(D.adv),d
 function editAdv(id){const a=(D.adv||[]).find(x=>String(x.id)==String(id));if(!a)return;advForm("Edit advance",a,(d,o)=>{a.d=o.d;a.w=o.w;a.t=o.t;a.amt=o.amt;a.note=o.note;d.close();save();});}
 function delAdv(id){
   const a=(D.adv||[]).find(x=>String(x.id)==String(id));
-  if(!a||!confirm("Advance '"+esc(a.id)+"' delete karein?"))return;
+  if(!a||!confirm("Advance '"+String(a.id)+"' delete karein?"))return;
   D.adv.splice(D.adv.indexOf(a),1);save();
 }
 
@@ -280,8 +292,8 @@ function addExI(title,col,a){
 }
 function editEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit expense","ex",a);}
 function editInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(a)addExI("Edit income","inc",a);}
-function delEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Expense '"+esc((a.v||a.id))+"' delete karein?"))return;D.ex.splice(D.ex.indexOf(a),1);save();}
-function delInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Income '"+esc((a.v||a.id))+"' delete karein?"))return;D.inc.splice(D.inc.indexOf(a),1);save();}
+function delEx(id){const a=(D.ex||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Expense '"+String(a.v||a.id)+"' delete karein?"))return;D.ex.splice(D.ex.indexOf(a),1);save();}
+function delInc(id){const a=(D.inc||[]).find(x=>String(x.id)==String(id));if(!a||!confirm("Income '"+String(a.v||a.id)+"' delete karein?"))return;D.inc.splice(D.inc.indexOf(a),1);save();}
 
 /* ================= Settlements (Smart Auto NIL) ================= */
 function settlements(){
@@ -290,7 +302,7 @@ function settlements(){
   const nilKeys=Object.keys(D.nl||{});
   el.innerHTML=`<h1>Settlements (Smart Auto NIL)</h1>
   <table><thead><tr><th>Worker</th><th>Period</th><th>Status</th><th class="num">Opening</th><th class="num">Advance</th><th class="num">Deductions</th><th class="num">Final balance</th><th>Settlement ID</th><th></th></tr></thead><tbody>
-    ${hist.map(h=>`<tr><td>${esc(h.workerName||who(h.workerId).n||h.workerId)}</td><td>${esc((h.start||"")+" – "+(h.end||h.through||""))}</td><td><span class="badge ${esc(h.status||"")}">${esc(h.status||"")}</span></td><td class="num">${num(h.openingBalance)}</td><td class="num">${num(h.totalAdvance)}</td><td class="num">${num(h.deductions)}</td><td class="num"><span class="${+(h.finalAmount||0)>=0?"pos":"neg"}">${num(h.finalAmount)}</span></td><td>${esc(h.id||"")}</td><td>${h.status==="VERIFIED"?'<button class="btn sm ghost" onclick="undo('+esc(JSON.stringify(h.id))+')">Undo</button>':"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="mu">Settlement data nahi hai.</td></tr>'}
+    ${hist.map(h=>`<tr><td>${esc(h.workerName||who(h.workerId).n||h.workerId)}</td><td>${esc((h.start||"")+" – "+(h.end||h.through||""))}</td><td><span class="badge ${esc(h.status||"")}">${esc(h.status||"")}</span></td><td class="num">${num(h.openingBalance)}</td><td class="num">${num(h.totalAdvance)}</td><td class="num">${num(h.deductions)}</td><td class="num"><span class="${+(h.finalAmount||0)>=0?"pos":"neg"}">${num(h.finalAmount)}</span></td><td>${esc(h.id||"")}</td><td>${h.status==="VERIFIED"?'<button class="btn sm ghost" onclick="undo('+jsq(h.id)+')">Undo</button>':"—"}</td></tr>`).join("")||'<tr><td colspan="9" class="mu">Settlement data nahi hai.</td></tr>'}
   </tbody></table>
   ${nilKeys.length?'<h2 class="mt">NIL records ('+nilKeys.length+')</h2><table><thead><tr><th>Worker</th><th>Period</th><th class="num">Net</th><th class="num">Carry</th><th>From</th><th>At</th></tr></thead><tbody>'+nilKeys.map(k=>{const[id,d]=String(k).split("|");const rec=(D.nl||{})[k]||{};return `<tr><td>${esc(who(+id).n||id)}</td><td>${esc(d||"")}</td><td class="num">${num(rec.net)}</td><td class="num">${num(rec.carry)}</td><td>${esc(rec.from||"")}</td><td>${esc(rec.at||"")}</td></tr>`}).join("")+'</tbody></table>':""}`;
 }
@@ -364,32 +376,33 @@ function showLogin(){
   </div>`;
   $("#l-btn").onclick=()=>login();
 }
-function showErr(m){const e=$("#l-err");e.hidden=false;e.textContent=m;}
+function showErr(m){const e=$("#l-err");if(!e)return;e.hidden=false;e.classList.add("on");e.textContent=m;}
+function clearErr(){const e=$("#l-err");if(e){e.hidden=true;e.classList.remove("on");e.textContent="";}}
 async function login(){
   const id=$("#l-id").value.trim(),pw=$("#l-pw").value;
   if(!id||!pw){showErr("Gmail/number aur password likho");return}
+  clearErr();
   const b=$("#l-btn");b.disabled=true;b.textContent="Signing in…";
   const r=await api("POST","/auth/login",{id,password:pw});
   b.disabled=false;b.textContent="Sign in";
-  if(!r.token){showErr(r.error||"Login nahi hua");return}
-  let rr=r;
-  if(r.status==="active"){const l=await api("POST","/auth/login",{id,password:pw});if(l.token)rr=l;}
-  if(!rr.token){showErr(rr.error||"Login nahi hua");return}
-  setTk(rr.token);
-  ME={id:rr.user?rr.user.id:null,u:rr.user?rr.user.name:"",r:rr.user?rr.user.role:""};
+  if(!r.token){showErr(r.error||(r._s===0?"Server se connection nahi bana":"Login nahi hua"));return}
+  setTk(r.token);
+  ME={id:r.user?r.user.id:null,u:r.user?r.user.name:"",r:r.user?r.user.role:""};
   const lr=await loadData();
   if(lr._s===401){setTk("");ME=null;showLogin();return}
+  if(lr._s===0){showErr("Server se connection nahi bana");return}
   render();
 }
 function authFail(){setTk("");ME=null;showLogin();}
 async function start(){
   const r=await loadData();
   if(r._s===401){authFail();return}
+  if(r._s===0){authFail();showErr("Server se connection nahi bana");return}
   if(r.error)say("Server se data nahi mila: "+r.error);
   render();
 }
 if(typeof confirm==="undefined")window.confirm=()=>true;
 document.addEventListener("DOMContentLoaded",()=>{if(localStorage.getItem("bm_tok"))start();else showLogin();});
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5ddd4f8ec8e47cd',t:'MTc5NTI0NDU3OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5ddd4f8ec8e47cd',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

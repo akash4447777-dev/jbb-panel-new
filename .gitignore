@@ -1,0 +1,16 @@
+# dependencies (none required — zero-dependency Node server)
+node_modules/
+
+# runtime data: local store, signing secret, atomic-write temp files
+data/
+*.tmp
+
+# logs & OS noise
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/

@@ -15,6 +15,9 @@ const AS = ["Approved", "Awaiting Approval", "Rejected"];        // approval
 const IS = ["Received", "Pending"];                             // income status
 const ROLES = { super: "Super Admin", admin: "Admin", manager: "Manager" };
 const LKEY = "jbb_db_v3", PKEY = "jbb_prefs_v3", TOK = "bm_tok";
+/* keys written by the FIRST panel version. Anyone who used it has their whole
+   dataset sitting under these, so they must be read and carried over. */
+const OLD_LKEY = "jbb_local_db", OLD_PKEY = "jbb_prefs";
 
 /* default master lists (editable in Settings) */
 const SUBS_DEF = "Rent & Lease:Shop Rent,Warehouse Rent,Office Rent,Equipment Lease|Salary & Wages:Staff Salary,Daily Wages,Bonus & Incentives,Overtime|Utilities:Electricity,Internet,Water,Phone / Mobile|Purchase & Inventory:Goods for Resale,Raw Material,Packaging,Freight Inward|Marketing & Advertising:Social Media Ads,Search Ads,Printing & Flyers,Festival Campaign|Transport & Logistics:Freight Outward,Fuel,Vehicle Hire,Courier|Repairs & Maintenance:AC Repair,Computer Repair,Building Repair,Vehicle Repair|Office & Admin:Stationery,Software / Subscriptions,Cleaning,Refreshments|Taxes & Compliance:GST Payment,Income Tax,Licence & Fees,Professional Tax|Professional Fees:CA / Audit,Legal,Consulting|Insurance:Stock Insurance,Vehicle Insurance,Health Insurance|Bank & Finance:Bank Charges,Loan Interest,Card Fees|Travel & Entertainment:Travel,Hotel,Client Meals|Assets & Equipment:Machinery,Furniture,Computers,Display Racks|Miscellaneous:Other";
@@ -75,6 +78,49 @@ function fmtT(t) { if (!t) return ""; const [h, m] = String(t).split(":").map(Nu
 /* ---------------- prefs / mode ---------------- */
 function prefs() { try { return JSON.parse(localStorage.getItem(PKEY) || "{}"); } catch (e) { return {}; } }
 function setPrefs(o) { try { localStorage.setItem(PKEY, JSON.stringify(Object.assign(prefs(), o))); } catch (e) {} }
+
+/* Switch storage mode from Settings.
+   Local -> Cloud: the device's data is pushed to the server so nothing is lost.
+   Cloud -> Local: the server's data is copied onto the device first.
+   Either direction asks for confirmation because it changes where future edits go. */
+async function setMode(next) {
+  if (next !== "local" && next !== "cloud") return;
+  if (next === MODE) return toast("Pehle se " + (next === "local" ? "Offline" : "Cloud") + " mode me hai");
+  const label = next === "local" ? "Offline (isi device me)" : "Cloud (server par)";
+  if (!confirm("Switch to " + label + "?\n\nAapka data saath le jaaya jayega, kuch nahi mitega.")) return;
+
+  const snapshot = JSON.parse(JSON.stringify(D));
+  if (next === "cloud" && !cloudBase()) {
+    /* nothing configured — send to whatever host serves this page */
+    setPrefs({ cloudBase: (location.protocol === "file:" ? "" : location.origin) });
+  }
+  setPrefs({ mode: next });
+  MODE = next;
+
+  if (next === "cloud") {
+    /* push what is on this device up to the server */
+    const r = await api("PUT", "/data", { data: snapshot });
+    if (!r.ok) {
+      setPrefs({ mode: "local" }); MODE = "local";
+      return say("Server ne data nahi liya: " + (r.error || r._s) + "\nOffline mode me hi rahoge.");
+    }
+    toast("Cloud mode — data server par chala gaya");
+  } else {
+    /* copy the server's data down so offline shows the same numbers */
+    const r = await api("GET", "/data");
+    if (r.ok && r.data) {
+      D = r.data; migrate(); VER = r.ver || 0;
+      const db = dbLoadLocal() || localDbInit();
+      db.data = D; db.ver = VER; dbSaveLocal(db);
+      toast("Offline mode — server ka data device par aa gaya");
+    } else {
+      toast("Offline mode — server ka data nahi mila, device ka data use ho raha hai");
+    }
+  }
+  closeDlg();
+  await loadData().catch(() => {});
+  render();
+}
 function cloudBase() { return String(prefs().cloudBase || "").replace(/\/+$/, ""); }
 
 let MODE = "cloud";
@@ -105,10 +151,26 @@ let tab = "dash", q = "", lim = 100;
 let co = "0", br = "0", dp = "0";
 let date = today(), gm = today().slice(0, 7), fy = fyOf(today()), mn = "All";
 let as = "w";                    // attendance group: w|o|m
-let av = "s";                    // advances view: s(sheet)|l(list)
+let av = "l";                    // advances view: l(list, the familiar one)|s(sheet)
 let fv = "d";                    // funds view: d|t|a
 let onlyE = false;
 let undoStack = [];
+
+/* Manager budgets were an array in older layouts. Two different conventions
+   exist in the wild, and they are distinguishable:
+     • the FIRST panel wrote [a, b] 0-based  -> element 0 belongs to manager 1
+     • the newer server coerced to an array after writing 1-based keys, which
+       leaves element 0 empty: [null, a, b]
+   So shift by one only when the leading element is empty. */
+function budgetFromArray(arr) {
+  const o = {};
+  const oneBased = arr.length && !arr[0];
+  arr.forEach((v, i) => {
+    const idx = oneBased ? i : i + 1;
+    if (idx > 0 && +v) o[String(idx)] = +v;
+  });
+  return o;
+}
 
 /* ---------------- migrate / seed ---------------- */
 function migrate() {
@@ -121,11 +183,7 @@ function migrate() {
   if (!D.bud.cat || typeof D.bud.cat !== "object") D.bud.cat = {};
   if (!D.bud.mgr) D.bud.mgr = {};
   /* an older server stored manager budgets as an array; normalise to { "1": amt } */
-  if (Array.isArray(D.bud.mgr)) {
-    const o = {};
-    D.bud.mgr.forEach((v, i) => { if (i > 0 && v) o[String(i)] = v; });
-    D.bud.mgr = o;
-  }
+  if (Array.isArray(D.bud.mgr)) D.bud.mgr = budgetFromArray(D.bud.mgr);
   if (!D.opt) D.opt = { pw: 0, title: "JBB PANEL" };
   D.n = Math.max(+D.n || 1, 1);
   D.nx = Math.max(+D.nx || 1, 1);
@@ -248,16 +306,201 @@ function dbSaveLocal(db) {
 }
 function localDbInit() {
   let db = dbLoadLocal();
-  if (!db) { db = { ver: 0, data: seedDemo(), users: {}, createdAt: nowIso() }; migrateFrom(db); dbSaveLocal(db); }
+  if (!db) {
+    /* nothing under the current key — adopt the first panel's dataset if the
+       user ever used it, otherwise start from a clean seed. Either way the
+       original old key is left untouched, so this is reversible. */
+    const old = adoptOldStore();
+    db = old || { ver: 0, data: seedDemo(), users: {}, createdAt: nowIso() };
+    migrateFrom(db);
+    dbSaveLocal(db);
+  }
   return db;
 }
+
+/* read the first panel's store and convert it to the current layout */
+function adoptOldStore() {
+  let raw;
+  try { raw = localStorage.getItem(OLD_LKEY); } catch (e) { return null; }
+  if (!raw) return null;
+  let old;
+  try { old = JSON.parse(raw); } catch (e) { return null; }
+  if (!old || !old.data || typeof old.data !== "object") return null;
+  const db = {
+    ver: Number(old.ver) || 0,
+    data: upgradeOldData(Object.assign({}, old.data)),
+    users: old.users && typeof old.users === "object" ? old.users : {},
+    createdAt: old.createdAt || nowIso(),
+    migratedFrom: OLD_LKEY,
+    migratedAt: nowIso()
+  };
+  /* the old panel's saved mode/cloud base carry over too */
+  try {
+    const op = JSON.parse(localStorage.getItem(OLD_PKEY) || "null");
+    if (op && typeof op === "object") {
+      const keep = {};
+      if (op.mode) keep.mode = op.mode;
+      if (op.cloudBase) keep.cloudBase = op.cloudBase;
+      if (op.base) keep.cloudBase = op.base;
+      if (Object.keys(keep).length) setPrefs(keep);
+    }
+  } catch (e) {}
+  /* carry the session over so the user is not asked to log in again */
+  try {
+    const tok = localStorage.getItem(TOK);
+    if (!tok && Object.keys(db.users).length === 1) localStorage.setItem(TOK, "local:" + Object.keys(db.users)[0]);
+  } catch (e) {}
+  return db;
+}
+/* ---------------------------------------------------------------------------
+   Upgrade from the first panel version.
+
+   That version kept everything under ONE data object, but its vocabulary was
+   different from this one. Concretely:
+
+     • expense/income rows used `v` for the vendor — here `v` means GST rate,
+       so the vendor would have overwritten the GST field and vanished.
+     • income rows also used `v` for the payer; here it is `party`.
+     • workers carried `ph` (mobile) and `em` (email); this panel has no such
+       columns, so they must be kept in the record even if not displayed.
+     • categories were free text ("Material", "Transport", "Contract"); this
+       panel's categories are a fixed master list, so they are added to it.
+     • `bud.mgr` was a plain array indexed by manager.
+     • attendance codes were P / H / A.
+
+   Nothing is dropped: unknown keys survive on the record, and every mapping is
+   guarded so already-migrated data passes through untouched.
+   --------------------------------------------------------------------------- */
+function isOldShape(data) {
+  /* `v` on an expense row holding a string that is not a GST number is the
+     unmistakable signature of the old layout */
+  for (const x of data.ex || []) {
+    if (typeof x.v === "string" && !/^\d+(\.\d+)?$/.test(x.v)) return true;
+  }
+  for (const x of data.inc || []) {
+    if (typeof x.v === "string" && x.party == null && x.src == null) return true;
+  }
+  for (const w of data.w || []) {
+    if (w.ph != null || w.em != null) return true;
+  }
+  return false;
+}
+
+function upgradeOldData(raw) {
+  const data = Object.assign({}, raw);
+  const B = "", P = "", M = "";
+
+  /* ---- master lists: absorb the free-text categories the old panel used ---- */
+  const m = data.m && typeof data.m === "object" ? data.m : {};
+  const cat = Array.isArray(m.cat) ? m.cat.slice() : [];
+  const sub = m.sub && typeof m.sub === "object" ? Object.assign({}, m.sub) : {};
+  for (const key of ["ex", "inc"]) {
+    for (const x of data[key] || []) {
+      const c = typeof x.cat === "string" ? x.cat.trim() : "";
+      if (!c) continue;
+      const hit = cat.find(k => k.toLowerCase() === c.toLowerCase());
+      if (hit) { x.cat = hit; continue; }
+      cat.push(c); sub[c] = sub[c] || [];
+      x.cat = c;
+    }
+  }
+  data.m = Object.assign({}, m, { cat, sub });
+
+  /* ---- expenses: old {v: vendor} -> new {v: vendor, g: gst, ...} ---- */
+  for (const x of data.ex || []) {
+    if (typeof x.v === "string" && !/^\d+(\.\d+)?$/.test(x.v)) {
+      x.vendor = x.v;              /* keep the vendor under a name that cannot clash */
+      x.v = x.vendor;
+    }
+    if (x.g == null || typeof x.g === "string") x.g = Number(x.g) || 0;
+    if (x.br == null) x.br = B;
+    if (x.dp == null) x.dp = P;
+    if (x.sub == null) x.sub = (sub[x.cat] || [])[0] || "";
+    if (x.pp == null) x.pp = 0;
+    if (x.due == null) x.due = "";
+    if (x.st == null) x.st = "Paid";
+    if (x.ap == null) x.ap = "Approved";
+    if (x.md == null) x.md = M;
+    if (x.inv == null) x.inv = x.ds && /^[A-Z]{2,}-?\d+$/i.test(String(x.ds)) ? x.ds : "";
+    if (x.ds == null) x.ds = "";
+    if (typeof x.c === "number") x.c = String(x.c);
+  }
+
+  /* ---- income: old {v: party} -> new {party, src} ---- */
+  for (const x of data.inc || []) {
+    if (x.party == null) {
+      x.party = typeof x.v === "string" ? x.v : "";
+      if (typeof x.v === "string") x.v = null;
+    }
+    if (x.v != null) delete x.v;               /* income has no GST column */
+    if (x.src == null) x.src = (data.m.src && data.m.src[0]) || "Other Income";
+    if (x.br == null) x.br = B;
+    if (x.g == null) x.g = 0;
+    if (x.st == null) x.st = "Received";
+    if (x.md == null) x.md = M;
+    if (x.ref == null) x.ref = "";
+    if (x.party == null) x.party = "";
+    if (typeof x.c === "number") x.c = String(x.c);
+  }
+
+  /* ---- advances ---- */
+  for (const a of data.adv || []) {
+    if (a.note == null) a.note = "";
+    if (a.t == null) a.t = "g";
+    if (typeof a.w === "string" && /^\d+$/.test(a.w)) a.w = +a.w;
+  }
+
+  /* ---- workers: keep ph/em, they are simply not shown as columns ---- */
+  for (const w of data.w || []) {
+    if (w.wg == null) w.wg = 0;
+    if (w.r == null) w.r = "";
+    if (w.c == null) w.c = "1";
+    if (typeof w.c === "number") w.c = String(w.c);
+  }
+
+  /* ---- companies/managers ---- */
+  data.cos = (data.cos || []).map(c => ({
+    m: typeof c === "string" ? c : (c.m || c.n || "MANAGER"),
+    n: c.n != null ? c.n : String((c.m || c.n || "")),
+    x: c.x === true || c.x === 1 ? 1 : 0
+  }));
+
+  /* ---- budgets: array -> { "1": amt } ---- */
+  if (!data.bud || typeof data.bud !== "object") data.bud = { cat: {}, mgr: {} };
+  if (Array.isArray(data.bud.mgr)) data.bud.mgr = budgetFromArray(data.bud.mgr);
+  else if (!data.bud.mgr || typeof data.bud.mgr !== "object") data.bud.mgr = {};
+  if (!data.bud.cat || typeof data.bud.cat !== "object") data.bud.cat = {};
+
+  /* ---- attendance: keep every recorded code, blank out anything unknown ---- */
+  const ATT = { P: "P", H: "H", A: "A", L: "L", "": "" };
+  const a = {};
+  for (const [k, v] of Object.entries(data.a || {})) a[k] = ATT[v] == null ? "" : ATT[v];
+  data.a = a;
+
+  /* ---- the old panel had no `t` array; it used {} ---- */
+  if (Array.isArray(data.t)) data.t = {};
+  if (!data.t || typeof data.t !== "object") data.t = {};
+  if (!data.nl || typeof data.nl !== "object") data.nl = {};
+  if (!Array.isArray(data.sh)) data.sh = [];
+  if (!Array.isArray(data.s)) data.s = [];
+
+  data.n = Math.max(+data.n || 1, 1);
+  data.nx = Math.max(+data.nx || 1, 1);
+  data.ni = Math.max(+data.ni || 1, 1);
+  return data;
+}
+
 function migrateFrom(db) {
   if (!db || !db.data) return;
-  /* the old panel stored companies as {m} only, and users separately */
-  db.data = Object.assign({}, SEED, db.data);
-  for (const c of db.data.cos || []) { if (c.n == null) c.n = String(c.m || "").toUpperCase(); if (c.x == null) c.x = 0; }
   if (!db.users) db.users = {};
+  db.data = upgradeIfOld(db.data);
   return db;
+}
+
+/* run the old-schema upgrade only when the shape actually looks old */
+function upgradeIfOld(data) {
+  if (!isOldShape(data)) return Object.assign({}, SEED, data);
+  return Object.assign({}, SEED, upgradeOldData(data));
 }
 
 /* local password: screen lock only (no server to verify against) */
@@ -269,7 +512,11 @@ function pwHash(id, pw) {
 function localUser() {
   const t = localStorage.getItem(TOK) || "";
   if (t.indexOf("local:") !== 0) return null;
-  const db = dbLoadLocal();
+  /* localDbInit(), not dbLoadLocal(): the first panel's data lives under a
+     different key and is only moved across during init. Reading the raw key
+     here means a returning user looks logged-out until something else triggers
+     the migration. */
+  const db = localDbInit();
   return db && db.users ? db.users[t.slice(6)] || null : null;
 }
 

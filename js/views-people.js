@@ -45,8 +45,10 @@ function workL() {
   const list = filterWorkers();
   const rows = list.map(w => {
     const b = bal(w.id, "9999-12-31");
+    const contact = [w.ph, w.em].filter(Boolean).join(" · ");
     return `<div class="row" onclick="addW(${w.id})">
-      <div>${esc(w.n)}<small>${esc(cn(w.c))} · ${esc(w.r || "—")} · wage ${num(w.wg)}</small></div>
+      <div>${esc(w.n)}<small>${esc(cn(w.c))} · ${esc(w.r || "—")} · wage ${num(w.wg)}</small>
+        ${contact ? `<small>${esc(contact)}</small>` : ""}</div>
       ${b ? `<span class="mu r">Advance<br><b class="${b > 0 ? "neg" : "pos"}">${num(b)}</b></span>` : ""}</div>`;
   });
   const totalAdv = R2(sum(list.map(w => bal(w.id, "9999-12-31"))));
